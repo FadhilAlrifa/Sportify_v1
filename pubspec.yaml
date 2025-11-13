@@ -1,0 +1,30 @@
+name: sportify
+description: Sistem booking lapangan olahraga terintegrasi
+publish_to: 'none'
+version: 0.1.0
+environment:
+  sdk: '>=2.17.0 <3.0.0'
+
+
+dependencies:
+  flutter:
+    sdk: flutter
+  provider: ^6.0.5
+  http: ^0.13.6
+  intl: ^0.18.0
+  uuid: ^3.0.7
+# Untuk integrasi nyata, tambahkan:
+# firebase_core: ^2.5.0
+# firebase_auth: ^4.2.0
+# cloud_firestore: ^4.4.0
+# firebase_messaging: ^14.2.0
+# flutter_stripe: ^7.0.0 (atau package pembayaran yang Anda pilih)
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+
+flutter:
+  uses-material-design: true
