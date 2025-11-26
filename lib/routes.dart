@@ -23,11 +23,11 @@ class Routes {
       case courtDetail:
         final args = settings.arguments as Map<String, dynamic>?;
         return MaterialPageRoute(
-            builder: (_) => CourtDetailScreen(courtId: args?['id']));
+            builder: (_) => CourtDetailScreen(courtId: args?['id'].toString()));
       case booking:
         final args = settings.arguments as Map<String, dynamic>?;
         return MaterialPageRoute(
-            builder: (_) => BookingScreen(courtId: args?['id']));
+            builder: (_) => BookingScreen(courtId: args?['id'].toString()));
       default:
         return MaterialPageRoute(builder: (_) => const LoginScreen());
     }
