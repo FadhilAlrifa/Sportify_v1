@@ -6,18 +6,18 @@ import 'screens/home/court_detail_screen.dart';
 import 'screens/home/booking_screen.dart';
 
 class Routes {
-  static const login = '/login';
-  static const register = '/register';
-  static const home = '/home';
-  static const courtDetail = '/court';
-  static const booking = '/booking';
+  static const String login = '/login';
+  static const String register = '/register';
+  static const String home = '/home';
+  static const String courtDetail = '/court';
+  static const String booking = '/booking';
 
   static Route<dynamic> generate(RouteSettings settings) {
     switch (settings.name) {
       case login:
         return MaterialPageRoute(builder: (_) => const LoginScreen());
-      // case register:
-      //   return MaterialPageRoute(builder: (_) => const RegisterScreen());
+      case register:
+        return MaterialPageRoute(builder: (_) => const RegisterScreen());
       case home:
         return MaterialPageRoute(builder: (_) => const HomeScreen());
       case courtDetail:
