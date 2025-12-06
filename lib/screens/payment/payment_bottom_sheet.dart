@@ -131,7 +131,7 @@ class PaymentBottomSheet extends StatelessWidget {
           SizedBox(
             height: 40,
             child: Image.asset(
-              "assets/images/qris_logo.png", // Ubah sesuai folder asetmu
+              "qris_logo.png", // Ubah sesuai folder asetmu
               fit: BoxFit.contain,
             ),
           ),
@@ -160,7 +160,7 @@ class PaymentBottomSheet extends StatelessWidget {
               ],
             ),
             child: Image.asset(
-              "assets/images/qris_sample.png", // QR Code kamu
+              "qris_sample.jpg", // QR Code kamu
               width: 180,
               height: 180,
               fit: BoxFit.cover,
