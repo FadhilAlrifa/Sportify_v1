@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:sportify/screens/payment/payment_bottom_sheet.dart';
 
 class BookingScreen extends StatefulWidget {
   final dynamic courtId;
@@ -338,7 +339,24 @@ class _BookingScreenState extends State<BookingScreen> {
           ),
           ElevatedButton(
             onPressed: (_selectedDate != null && _selectedTime != null)
-                ? () => _confirmBooking(context)
+                ? () {
+                    final totalCost = basePrice * _selectedDuration;
+
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) {
+                        return PaymentBottomSheet(
+                          courtId: widget.courtId,
+                          selectedDate: _selectedDate!,
+                          selectedTime: _selectedTime!,
+                          duration: _selectedDuration,
+                          totalCost: totalCost,
+                        );
+                      },
+                    );
+                  }
                 : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF00B47A),
@@ -350,11 +368,13 @@ class _BookingScreenState extends State<BookingScreen> {
             child: const Text(
               "LANJUT BOOKING",
               style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold),
+                fontSize: 16,
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
+
         ],
       ),
     );

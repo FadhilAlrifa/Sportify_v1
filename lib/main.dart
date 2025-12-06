@@ -4,11 +4,14 @@ import 'app.dart';
 import 'providers/auth_provider.dart';
 import 'providers/court_provider.dart';
 import 'providers/booking_provider.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 // Inisialisasi Firebase kalau dipakai
 // await Firebase.initializeApp();
+
+  await initializeDateFormatting('id_ID', null);
 
   runApp(MultiProvider(
     providers: [
