@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
 import '../../routes.dart';
+// PENTING: Import halaman profil yang baru dibuat
+import '../profile/profile_screen.dart'; 
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -10,143 +12,55 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  // Index halaman saat ini (0 = Home, 3 = Profil)
+  int _selectedIndex = 0; 
   final TextEditingController searchC = TextEditingController();
 
   List<Map<String, String>> venue = [
-    {
-      "img": "assets/futsal.png",
-      "name": "Arena Futsal Gowa",
-      "loc": "Jl. Malino Raya No.21"
-    },
-    {
-      "img": "assets/badminton.png",
-      "name": "Badminton Center",
-      "loc": "Jl. Hertasning Baru No.17"
-    },
-    {
-      "img": "assets/basket.png",
-      "name": "Basketball Court",
-      "loc": "Jl. Poros Pallangga No.42"
-    },
-    {
-      "img": "assets/tennis.png",
-      "name": "Tennis Arena",
-      "loc": "Jl. Syekh Yusuf No.88"
-    },
-    {
-      "img": "assets/voli.png",
-      "name": "Voli Indoor Arena",
-      "loc": "Jl. Tamalanrea Indah No.12"
-    },
-    {
-      "img": "assets/minisoccer.png",
-      "name": "Mini Soccer Field",
-      "loc": "Jl. Metro Tanjung Bunga No.3"
-    },
+    {"img": "assets/futsal.png", "name": "Arena Futsal Gowa", "loc": "Jl. Malino Raya No.21"},
+    {"img": "assets/badminton.png", "name": "Badminton Center", "loc": "Jl. Hertasning Baru No.17"},
+    {"img": "assets/basket.png", "name": "Basketball Court", "loc": "Jl. Poros Pallangga No.42"},
+    {"img": "assets/tennis.png", "name": "Tennis Arena", "loc": "Jl. Syekh Yusuf No.88"},
+    {"img": "assets/voli.png", "name": "Voli Indoor Arena", "loc": "Jl. Tamalanrea Indah No.12"},
+    {"img": "assets/minisoccer.png", "name": "Mini Soccer Field", "loc": "Jl. Metro Tanjung Bunga No.3"},
   ];
 
   List<Map<String, String>> get filteredVenue {
     if (searchC.text.isEmpty) return venue;
     return venue
-        .where((v) =>
-            v["name"]!.toLowerCase().contains(searchC.text.toLowerCase()))
+        .where((v) => v["name"]!.toLowerCase().contains(searchC.text.toLowerCase()))
         .toList();
+  }
+
+  // Fungsi untuk menangani perpindahan tab
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    // Daftar halaman yang akan ditampilkan sesuai index
+    final List<Widget> screens = [
+      _buildHomeContent(),             // Index 0: Home
+      const Center(child: Text("Chat - Coming Soon")), // Index 1: Chat (Placeholder)
+      const Center(child: Text("Riwayat - Coming Soon")), // Index 2: Riwayat (Placeholder)
+      const ProfileScreen(),           // Index 3: Profil (File baru)
+    ];
+
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
-      body: SingleChildScrollView(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(20, 55, 20, 30),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFF00B380),
-                  Color(0xFF00DFA2),
-                ],
-              ),
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(22)),
-            ),
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                height: 46,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: searchC,
-                        onChanged: (_) => setState(() {}),
-                        decoration: InputDecoration(
-                          border: InputBorder.none,
-                          hintText: "Cari Lapangan / Venue...",
-                          hintStyle: TextStyle(color: Colors.grey.shade500),
-                        ),
-                      ),
-                    ),
-                    Icon(Ionicons.search, color: Colors.grey.shade700)
-                  ],
-                ),
-              ),
-              const SizedBox(height: 18),
-              Text("Selamat Datang,",
-                  style: TextStyle(color: Colors.white, fontSize: 17)),
-              Text("User Sportify",
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold)),
-            ]),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
-            child: Text("Kategori Olahraga",
-                style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Colors.blueGrey.shade800)),
-          ),
-          SizedBox(
-            height: 80,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              children: [
-                _kategori("Futsal", Ionicons.football_outline, Colors.blue),
-                _kategori(
-                    "Badminton", Ionicons.tennisball_outline, Colors.pink),
-                _kategori("Basket", Ionicons.basketball_outline, Colors.orange),
-                _kategori("Voli", Ionicons.body_outline, Colors.green),
-                _kategori("Tenis", Ionicons.tennisball, Colors.redAccent),
-                _kategori("Lainnya", Ionicons.add, Colors.grey),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 10), // Bawah 0
-            child: Text(
-              "Lapangan Rating Tertinggi",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
-            ),
-          ),
-          _venueGrid(filteredVenue),
-          const SizedBox(height: 0),
-        ]),
-      ),
+      // Body akan berubah sesuai _selectedIndex
+      body: screens[_selectedIndex], 
+      
       bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex, // Menandai tab yang aktif
+        onTap: _onItemTapped,         // Menjalankan fungsi saat ditekan
         selectedItemColor: const Color(0xFF00B47A),
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
+        showUnselectedLabels: true,
         items: const [
           BottomNavigationBarItem(
               icon: Icon(Ionicons.home_outline), label: "Home"),
@@ -158,6 +72,91 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: Icon(Ionicons.person_outline), label: "Profil"),
         ],
       ),
+    );
+  }
+
+  // --- Widget Khusus Konten Home (Dipisahkan agar rapi) ---
+  Widget _buildHomeContent() {
+    return SingleChildScrollView(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(20, 55, 20, 30),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF00B380), Color(0xFF00DFA2)],
+            ),
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(22)),
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              height: 46,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [const BoxShadow(color: Colors.black12, blurRadius: 4)],
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: searchC,
+                      onChanged: (_) => setState(() {}),
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        hintText: "Cari Lapangan / Venue...",
+                        hintStyle: TextStyle(color: Colors.grey.shade500),
+                      ),
+                    ),
+                  ),
+                  Icon(Ionicons.search, color: Colors.grey.shade700)
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
+            const Text("Selamat Datang,",
+                style: TextStyle(color: Colors.white, fontSize: 17)),
+            const Text("User Sportify",
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold)),
+          ]),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
+          child: Text("Kategori Olahraga",
+              style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.blueGrey.shade800)),
+        ),
+        SizedBox(
+          height: 80,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            children: [
+              _kategori("Futsal", Ionicons.football_outline, Colors.blue),
+              _kategori("Badminton", Ionicons.tennisball_outline, Colors.pink),
+              _kategori("Basket", Ionicons.basketball_outline, Colors.orange),
+              _kategori("Voli", Ionicons.body_outline, Colors.green),
+              _kategori("Tenis", Ionicons.tennisball, Colors.redAccent),
+              _kategori("Lainnya", Ionicons.add, Colors.grey),
+            ],
+          ),
+        ),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(20, 18, 20, 10),
+          child: Text(
+            "Lapangan Rating Tertinggi",
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+          ),
+        ),
+        _venueGrid(filteredVenue),
+        const SizedBox(height: 20), // Tambahan jarak bawah agar tidak tertutup nav bar
+      ]),
     );
   }
 
@@ -214,7 +213,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(18),
                   color: Colors.white,
-                  boxShadow: [
+                  boxShadow: const [
                     BoxShadow(
                         color: Colors.black12,
                         blurRadius: 5,
@@ -238,10 +237,14 @@ class _HomeScreenState extends State<HomeScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(data[i]["name"]!,
-                                  style: TextStyle(
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
                                       fontWeight: FontWeight.w600,
                                       fontSize: 13.5)),
                               Text(data[i]["loc"]!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                       color: Colors.grey[600], fontSize: 11)),
                               const SizedBox(height: 4),
@@ -250,7 +253,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   Icon(Icons.star,
                                       size: 14, color: Colors.amber),
                                   SizedBox(width: 4),
-                                  Text("4.9 • 200+ Booking",
+                                  Text("4.9 • 200+ Book",
                                       style: TextStyle(fontSize: 11))
                                 ],
                               )
