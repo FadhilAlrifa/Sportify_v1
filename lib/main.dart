@@ -18,6 +18,7 @@ import 'screens/auth/login_screen.dart';
 // PENTING: Kita import HomeScreen dari folder home
 import 'screens/home/home_screen.dart';
 
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
