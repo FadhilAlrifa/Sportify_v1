@@ -7,6 +7,7 @@ import '../../widgets/navbar.dart';
 
 // Import Halaman Profil
 import '../profile/profile_screen.dart'; // Sesuaikan path-nya
+import '../history/history_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -51,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final List<Widget> screens = [
       _buildHomeContent(),                  // Index 0: Tampilan Home (Fungsi di bawah)
       const Center(child: Text("Chat")),    // Index 1: Placeholder Chat
-      const Center(child: Text("Riwayat")), // Index 2: Placeholder Riwayat
+      const HistoryScreen(), // Index 2: Placeholder Riwayat
       const ProfileScreen(),                // Index 3: Halaman Profil
     ];
 
