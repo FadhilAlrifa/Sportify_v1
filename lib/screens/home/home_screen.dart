@@ -18,14 +18,6 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0; 
   final TextEditingController searchC = TextEditingController();
 
-  final List<String> localImages = [
-    "assets/futsal.png",
-    "assets/badminton.png",
-    "assets/basket.png",
-    "assets/tennis.png",
-    "assets/voli.png",
-    "assets/minisoccer.png",
-  ];
 
   void _onItemTapped(int index) {
     setState(() {
@@ -36,7 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final List<Widget> screens = [
-      _buildHomeContent(),                
+      _buildHomeContent(),                  // Index 0: Home 
       const HistoryScreen(),                // Index 1: History
       const ProfileScreen(),                // Index 2: Profil
     ];
@@ -51,6 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // --- WIDGET KONTEN KHUSUS HOME ---
   Widget _buildHomeContent() {
     return SingleChildScrollView(
       child: Column(
@@ -107,6 +100,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
+          // List Kategori
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
             child: Text("Kategori Olahraga",
@@ -131,6 +125,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
+          // Grid Lapangan (DARI FIREBASE)
           const Padding(
             padding: EdgeInsets.fromLTRB(20, 18, 20, 10),
             child: Text(
@@ -139,9 +134,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           
-          // --- STREAM BUILDER UNTUK FIREBASE ---
+          // --- STREAM BUILDER ---
           StreamBuilder<QuerySnapshot>(
-            // Mengambil data dari koleksi 'venues' di Firestore
             stream: FirebaseFirestore.instance.collection('venues').snapshots(),
             builder: (context, snapshot) {
               if (snapshot.hasError) {
@@ -154,6 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
               var docs = snapshot.data!.docs;
 
+              // Filter Data
               if (searchC.text.isNotEmpty) {
                 docs = docs.where((doc) {
                   var data = doc.data() as Map<String, dynamic>;
@@ -181,6 +176,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // --- Helper Widgets ---
   Widget _kategori(String nama, IconData icon, Color warna) {
     return Container(
       margin: const EdgeInsets.only(right: 14),
@@ -221,20 +217,19 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         itemBuilder: (_, i) {
           final venueData = data[i].data() as Map<String, dynamic>;
-          
           final venueId = data[i].id; 
 
-          String localImage = localImages[i % localImages.length];
-
+          // AMBIL DATA DARI FIREBASE
           String name = venueData['name'] ?? 'Tanpa Nama';
           String loc = venueData['address'] ?? 'Alamat tidak tersedia';
           double rating = (venueData['rating'] ?? 0.0).toDouble();
+          String imageUrl = venueData['imageUrl'] ?? ''; 
 
           return GestureDetector(
             onTap: () {
               Navigator.of(context).pushNamed(
                 Routes.courtDetail,
-                arguments: {'id': venueId}, // Kirim ID dokumen Firebase
+                arguments: {'id': venueId}, 
               );
             },
             child: Container(
@@ -251,22 +246,46 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // GAMBAR (LOKAL)
+                  // --- GAMBAR DARI FIREBASE (Network Image) ---
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-                    child: Image.asset(
-                      localImage, // Tetap pakai aset lokal
-                      height: 105,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
+                    child: imageUrl.isNotEmpty
+                        ? Image.network(
+                            imageUrl,
+                            height: 105,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            // Handle Error jika link rusak
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                height: 105,
+                                color: Colors.grey[300],
+                                child: const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+                              );
+                            },
+                            // Handle Loading saat gambar di-download
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Container(
+                                height: 105,
+                                color: Colors.grey[200],
+                                child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                              );
+                            },
+                          )
+                        : Container( // Fallback jika imageUrl kosong di Firebase
+                            height: 105,
+                            width: double.infinity,
+                            color: Colors.grey[300],
+                            child: const Center(child: Icon(Icons.image_not_supported, color: Colors.grey)),
+                          ),
                   ),
+                  
                   Padding(
                     padding: const EdgeInsets.all(9),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // NAMA (DARI FIREBASE)
                         Text(name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -283,7 +302,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             const Icon(Icons.star, size: 14, color: Colors.amber),
                             const SizedBox(width: 4),
-                            // RATING (DARI FIREBASE)
                             Text("$rating • Tersedia",
                                 style: const TextStyle(fontSize: 11))
                           ],
