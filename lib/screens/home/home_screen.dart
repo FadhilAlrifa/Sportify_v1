@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore
 import '../../routes.dart';
 
-// 1. IMPORT NAVBAR ANDA (Sesuaikan path foldernya)
 import '../../widgets/navbar.dart'; 
-
-// Import Halaman Profil
-import '../profile/profile_screen.dart'; // Sesuaikan path-nya
+import '../profile/profile_screen.dart';
 import '../history/history_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -17,28 +15,18 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // --- STATE NAVIGASI ---
   int _selectedIndex = 0; 
   final TextEditingController searchC = TextEditingController();
 
-  // Data Dummy Venue
-  final List<Map<String, String>> venue = [
-    {"img": "assets/futsal.png", "name": "Arena Futsal Gowa", "loc": "Jl. Malino Raya No.21"},
-    {"img": "assets/badminton.png", "name": "Badminton Center", "loc": "Jl. Hertasning Baru No.17"},
-    {"img": "assets/basket.png", "name": "Basketball Court", "loc": "Jl. Poros Pallangga No.42"},
-    {"img": "assets/tennis.png", "name": "Tennis Arena", "loc": "Jl. Syekh Yusuf No.88"},
-    {"img": "assets/voli.png", "name": "Voli Indoor Arena", "loc": "Jl. Tamalanrea Indah No.12"},
-    {"img": "assets/minisoccer.png", "name": "Mini Soccer Field", "loc": "Jl. Metro Tanjung Bunga No.3"},
+  final List<String> localImages = [
+    "assets/futsal.png",
+    "assets/badminton.png",
+    "assets/basket.png",
+    "assets/tennis.png",
+    "assets/voli.png",
+    "assets/minisoccer.png",
   ];
 
-  List<Map<String, String>> get filteredVenue {
-    if (searchC.text.isEmpty) return venue;
-    return venue
-        .where((v) => v["name"]!.toLowerCase().contains(searchC.text.toLowerCase()))
-        .toList();
-  }
-
-  // --- LOGIKA GANTI TAB ---
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -47,23 +35,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 2. DAFTAR TAMPILAN (BODY)
-    // List ini menentukan apa yang tampil di tengah layar saat tab dipilih
     final List<Widget> screens = [
-      _buildHomeContent(),                  // Index 0: Tampilan Home (Fungsi di bawah)
-      const Center(child: Text("Chat")),    // Index 1: Placeholder Chat
-      const HistoryScreen(), // Index 2: Placeholder Riwayat
-      const ProfileScreen(),                // Index 3: Halaman Profil
+      _buildHomeContent(),                
+      const HistoryScreen(),                // Index 1: History
+      const ProfileScreen(),                // Index 2: Profil
     ];
 
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
-
-      // Body berubah dinamis sesuai _selectedIndex
       body: screens[_selectedIndex],
-
-      // 3. PASANG NAVBAR ANDA DI SINI
-      // Pastikan nama class di file navbar.dart Anda adalah 'Navbar'
       bottomNavigationBar: Navbar( 
         selectedIndex: _selectedIndex,
         onTap: _onItemTapped,
@@ -71,8 +51,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- WIDGET KONTEN KHUSUS HOME ---
-  // Kita pisahkan ini agar kode 'build' utama tidak berantakan
   Widget _buildHomeContent() {
     return SingleChildScrollView(
       child: Column(
@@ -129,7 +107,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // List Kategori
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
             child: Text("Kategori Olahraga",
@@ -154,7 +131,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // Grid Lapangan
           const Padding(
             padding: EdgeInsets.fromLTRB(20, 18, 20, 10),
             child: Text(
@@ -162,7 +138,42 @@ class _HomeScreenState extends State<HomeScreen> {
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
             ),
           ),
-          _venueGrid(filteredVenue),
+          
+          // --- STREAM BUILDER UNTUK FIREBASE ---
+          StreamBuilder<QuerySnapshot>(
+            // Mengambil data dari koleksi 'venues' di Firestore
+            stream: FirebaseFirestore.instance.collection('venues').snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return const Center(child: Text("Terjadi kesalahan memuat data"));
+              }
+
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              var docs = snapshot.data!.docs;
+
+              if (searchC.text.isNotEmpty) {
+                docs = docs.where((doc) {
+                  var data = doc.data() as Map<String, dynamic>;
+                  String name = (data['name'] ?? '').toString().toLowerCase();
+                  return name.contains(searchC.text.toLowerCase());
+                }).toList();
+              }
+
+              if (docs.isEmpty) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(20),
+                    child: Text("Tidak ada lapangan ditemukan."),
+                  ),
+                );
+              }
+
+              return _venueGrid(docs);
+            },
+          ),
           
           const SizedBox(height: 20),
         ],
@@ -170,7 +181,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- Helper Widgets ---
   Widget _kategori(String nama, IconData icon, Color warna) {
     return Container(
       margin: const EdgeInsets.only(right: 14),
@@ -195,7 +205,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _venueGrid(List<Map<String, String>> data) {
+  Widget _venueGrid(List<QueryDocumentSnapshot> data) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: GridView.builder(
@@ -210,12 +220,21 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisSpacing: 14,
         ),
         itemBuilder: (_, i) {
-          final venueItem = data[i];
+          final venueData = data[i].data() as Map<String, dynamic>;
+          
+          final venueId = data[i].id; 
+
+          String localImage = localImages[i % localImages.length];
+
+          String name = venueData['name'] ?? 'Tanpa Nama';
+          String loc = venueData['address'] ?? 'Alamat tidak tersedia';
+          double rating = (venueData['rating'] ?? 0.0).toDouble();
+
           return GestureDetector(
             onTap: () {
               Navigator.of(context).pushNamed(
                 Routes.courtDetail,
-                arguments: {'id': venueItem["name"]},
+                arguments: {'id': venueId}, // Kirim ID dokumen Firebase
               );
             },
             child: Container(
@@ -232,36 +251,41 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // GAMBAR (LOKAL)
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-                    child: Image.asset(data[i]["img"]!,
-                        height: 105,
-                        width: double.infinity,
-                        fit: BoxFit.cover),
+                    child: Image.asset(
+                      localImage, // Tetap pakai aset lokal
+                      height: 105,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                   Padding(
                     padding: const EdgeInsets.all(9),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(data[i]["name"]!,
+                        // NAMA (DARI FIREBASE)
+                        Text(name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 13.5)),
-                        Text(data[i]["loc"]!,
+                        Text(loc,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                                 color: Colors.grey[600], fontSize: 11)),
                         const SizedBox(height: 4),
                         Row(
-                          children: const [
-                            Icon(Icons.star, size: 14, color: Colors.amber),
-                            SizedBox(width: 4),
-                            Text("4.9 • 200+ Book",
-                                style: TextStyle(fontSize: 11))
+                          children: [
+                            const Icon(Icons.star, size: 14, color: Colors.amber),
+                            const SizedBox(width: 4),
+                            // RATING (DARI FIREBASE)
+                            Text("$rating • Tersedia",
+                                style: const TextStyle(fontSize: 11))
                           ],
                         )
                       ],

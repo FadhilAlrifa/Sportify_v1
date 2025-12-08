@@ -25,10 +25,10 @@ class Navbar extends StatelessWidget {
           icon: Icon(Ionicons.home_outline),
           label: "Home",
         ),
-        BottomNavigationBarItem(
-          icon: Icon(Ionicons.chatbubble_ellipses_outline),
-          label: "Chat",
-        ),
+        // BottomNavigationBarItem(
+        //   icon: Icon(Ionicons.chatbubble_ellipses_outline),
+        //   label: "Chat",
+        // ),
         BottomNavigationBarItem(
           icon: Icon(Ionicons.receipt_outline),
           label: "Riwayat",
