@@ -1,11 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Jangan lupa import ini
+import '../../routes.dart'; // Sesuaikan path routes Anda
+
+// Import Halaman Baru
+import 'account_detail_screen.dart';
+import 'payment_method_screen.dart';
+import 'notification_screen.dart';
+import 'help_support_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
+  // --- LOGIKA LOGOUT ---
+  void _handleLogout(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Konfirmasi Keluar"),
+        content: const Text("Yakin ingin keluar dari aplikasi?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Batal")),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await FirebaseAuth.instance.signOut();
+              if (context.mounted) {
+                // Pastikan 'Routes.login' ada di routes.dart Anda
+                Navigator.of(context).pushNamedAndRemoveUntil(Routes.login, (route) => false);
+              }
+            },
+            child: const Text("Keluar", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- HELPER NAVIGASI ---
+  void _navigateTo(BuildContext context, Widget page) {
+    Navigator.push(context, MaterialPageRoute(builder: (context) => page));
+  }
+
   @override
   Widget build(BuildContext context) {
+    final User? user = FirebaseAuth.instance.currentUser;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -13,9 +53,10 @@ class ProfileScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
+        automaticallyImplyLeading: false, // Hilangkan back button default
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () {}, 
             icon: const Icon(Ionicons.settings_outline, color: Colors.black),
           )
         ],
@@ -35,7 +76,7 @@ class ProfileScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       image: const DecorationImage(
-                        image: AssetImage('assets/futsal.png'), // Ganti dengan foto user jika ada
+                        image: AssetImage('assets/futsal.png'), 
                         fit: BoxFit.cover,
                       ),
                       border: Border.all(color: Colors.grey.shade200, width: 4),
@@ -57,22 +98,24 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              "User Sportify",
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            
+            // Nama & Email (Ambil dari Firebase Auth jika ada)
+            Text(
+              user?.displayName ?? "User Sportify",
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             Text(
-              "user@sportify.com",
+              user?.email ?? "user@sportify.com",
               style: TextStyle(color: Colors.grey.shade600),
             ),
             const SizedBox(height: 30),
             
-            // Tombol Edit Profil
+            // Tombol Edit (shortcut ke Detail Akun)
             SizedBox(
               width: 200,
               height: 45,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () => _navigateTo(context, const AccountDetailScreen()),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF00B380),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
@@ -82,15 +125,33 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 30),
 
-            // Menu Pilihan
-            _buildProfileItem(Ionicons.person_outline, "Detail Akun"),
-            _buildProfileItem(Ionicons.card_outline, "Metode Pembayaran"),
-            _buildProfileItem(Ionicons.notifications_outline, "Notifikasi"),
-            _buildProfileItem(Ionicons.help_circle_outline, "Bantuan & Support"),
+            // --- MENU PILIHAN (SUDAH BERFUNGSI) ---
+            _buildProfileItem(
+              icon: Ionicons.person_outline, 
+              title: "Detail Akun",
+              onTap: () => _navigateTo(context, const AccountDetailScreen()),
+            ),
+            _buildProfileItem(
+              icon: Ionicons.card_outline, 
+              title: "Metode Pembayaran",
+              onTap: () => _navigateTo(context, const PaymentMethodScreen()),
+            ),
+            _buildProfileItem(
+              icon: Ionicons.notifications_outline, 
+              title: "Notifikasi",
+              onTap: () => _navigateTo(context, const NotificationScreen()),
+            ),
+            _buildProfileItem(
+              icon: Ionicons.help_circle_outline, 
+              title: "Bantuan & Support",
+              onTap: () => _navigateTo(context, const HelpSupportScreen()),
+            ),
             
             const SizedBox(height: 20),
+            
+            // Tombol Keluar
             ListTile(
-              onTap: () {},
+              onTap: () => _handleLogout(context),
               leading: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
@@ -107,7 +168,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileItem(IconData icon, String title) {
+  Widget _buildProfileItem({required IconData icon, required String title, required VoidCallback onTap}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
       decoration: BoxDecoration(
@@ -118,7 +179,7 @@ class ProfileScreen extends StatelessWidget {
         leading: Icon(icon, color: Colors.black87),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
         trailing: const Icon(Ionicons.chevron_forward, size: 20, color: Colors.grey),
-        onTap: () {},
+        onTap: onTap,
       ),
     );
   }
