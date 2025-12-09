@@ -1,106 +1,211 @@
 import 'package:flutter/material.dart';
-import '../../models/order.dart'; // pastikan path sesuai
+import '../../models/order.dart';
+import '../history/detail_order_page.dart';
+import 'package:intl/intl.dart';
 
-class HistoryScreen extends StatelessWidget {
+class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
 
-  Color _statusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'completed':
-        return Colors.green;
-      case 'canceled':
-        return Colors.red;
-      case 'pending':
-        return Colors.orange;
-      default:
-        return Colors.grey;
+  @override
+  State<HistoryScreen> createState() => _HistoryScreenState();
+}
+
+class _HistoryScreenState extends State<HistoryScreen> {
+  String filter = "all";
+  final DateFormat _df = DateFormat.yMMMd();
+
+  List<OrderHistory> get filteredHistory {
+    final now = DateTime.now();
+    return dummyHistory.where((item) {
+      final d = _parseDate(item.date);
+      switch (filter) {
+        case 'today':
+          return d.year == now.year && d.month == now.month && d.day == now.day;
+        case 'week':
+          final diff = now.difference(d).inDays;
+          return diff >= 0 && diff < 7;
+        case 'month':
+          return d.year == now.year && d.month == now.month;
+        case 'all':
+        default:
+          return true;
+      }
+    }).toList().reversed.toList(); // latest first
+  }
+
+  DateTime _parseDate(String s) {
+    // try common formats used in dummy: "12 Jan 2025" or "2025-01-12"
+    try {
+      return DateFormat('d MMM yyyy').parse(s);
+    } catch (_) {
+      try {
+        return DateTime.parse(s);
+      } catch (_) {
+        return DateTime.now();
+      }
     }
+  }
+
+  Color _statusColor(String s) {
+    final st = s.toLowerCase();
+    if (st.contains('complete') || st.contains('selesai')) return Colors.green;
+    if (st.contains('cancel')) return Colors.red;
+    if (st.contains('pending')) return Colors.orange;
+    return Colors.grey;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF6F7F9),
       appBar: AppBar(
-        title: const Text("Riwayat Pemesanan"),
+        title: const Text('Riwayat Pemesanan', style: TextStyle(fontWeight: FontWeight.bold)),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 0.6,
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(12),
-        itemCount: dummyHistory.length,
-        itemBuilder: (context, index) {
-          final item = dummyHistory[index];
+      body: Column(
+        children: [
+          // Filter chips
+          SizedBox(
+            height: 56,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              children: [
+                _filterChip('Semua', 'all'),
+                const SizedBox(width: 8),
+                _filterChip('Hari ini', 'today'),
+                const SizedBox(width: 8),
+                _filterChip('Minggu ini', 'week'),
+                const SizedBox(width: 8),
+                _filterChip('Bulan ini', 'month'),
+              ],
+            ),
+          ),
 
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            elevation: 3,
-            child: Padding(
+          // List
+          Expanded(
+            child: filteredHistory.isEmpty
+                ? Center(
+                    child: Text('Tidak ada riwayat', style: TextStyle(color: Colors.grey[600])),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    itemCount: filteredHistory.length,
+                    itemBuilder: (ctx, i) {
+                      final item = filteredHistory[i];
+                      return _historyCard(context, item);
+                    },
+                  ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _filterChip(String label, String value) {
+    final sel = filter == value;
+    return InkWell(
+      onTap: () => setState(() => filter = value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: sel ? const Color(0xFF00C853).withOpacity(0.12) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: sel ? const Color(0xFF00C853) : Colors.grey.shade200),
+        ),
+        child: Row(
+          children: [
+            if (sel) const Icon(Icons.check, size: 16, color: Color(0xFF00C853)) else const SizedBox(),
+            if (sel) const SizedBox(width: 6),
+            Text(label, style: TextStyle(color: sel ? const Color(0xFF00C853) : Colors.black87, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _historyCard(BuildContext context, OrderHistory item) {
+    final statusColor = _statusColor(item.status);
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => DetailOrderPage(order: item)),
+      ),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [BoxShadow(color: Colors.black12.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 6))],
+        ),
+        child: Column(
+          children: [
+            // image
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+              child: _buildImage(item.imageUrl),
+            ),
+
+            // content
+            Padding(
               padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  Text(
-                    item.courtName,
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
+                  // title + meta
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(item.courtName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 8),
+                      Row(children: [
+                        const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+                        const SizedBox(width: 6),
+                        Text(item.date, style: TextStyle(color: Colors.grey[700])),
+                        const SizedBox(width: 12),
+                        const Icon(Icons.access_time, size: 14, color: Colors.grey),
+                        const SizedBox(width: 6),
+                        Text(item.time, style: TextStyle(color: Colors.grey[700])),
+                      ]),
+                    ]),
+                  ),
+
+                  // price & status
+                  Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                    Text('Rp ${item.price}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(color: statusColor.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
+                      child: Text(item.status, style: TextStyle(color: statusColor, fontWeight: FontWeight.bold)),
                     ),
-                  ),
-                  const SizedBox(height: 6),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.calendar_today, size: 16),
-                          const SizedBox(width: 6),
-                          Text(item.date),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          const Icon(Icons.access_time, size: 16),
-                          const SizedBox(width: 6),
-                          Text(item.time),
-                        ],
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Rp ${item.price}",
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: _statusColor(item.status).withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          item.status,
-                          style: TextStyle(
-                            color: _statusColor(item.status),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    const SizedBox(height: 6),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => DetailOrderPage(order: item))),
+                      child: const Text('Detail'),
+                    )
+                  ])
                 ],
               ),
             ),
-          );
-        },
+          ],
+        ),
       ),
     );
+  }
+
+  Widget _buildImage(String url) {
+    if (url.startsWith('http')) {
+      return Image.network(url, height: 140, width: double.infinity, fit: BoxFit.cover, errorBuilder: (c, e, s) {
+        return Container(
+          height: 140,
+          color: Colors.grey[300],
+          alignment: Alignment.center,
+          child: const Icon(Icons.broken_image, size: 40, color: Colors.grey),
+        );
+      });
+    } else {
+      return Image.asset(url, height: 140, width: double.infinity, fit: BoxFit.cover);
+    }
   }
 }

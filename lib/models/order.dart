@@ -1,12 +1,16 @@
-class OrderModel {
+class OrderHistory {
+  final String id;
   final String courtName;
+  final String imageUrl;
   final String date;
   final String time;
   final int price;
   final String status;
 
-  OrderModel({
+  OrderHistory({
+    required this.id,
     required this.courtName,
+    required this.imageUrl,
     required this.date,
     required this.time,
     required this.price,
@@ -14,19 +18,15 @@ class OrderModel {
   });
 }
 
-List<OrderModel> dummyHistory = [
-  OrderModel(
-    courtName: "Lapangan Futsal A",
-    date: "2025-01-12",
+// Dummy example
+List<OrderHistory> dummyHistory = [
+  OrderHistory(
+    id: "1",
+    courtName: "Arena Futsal",
+    imageUrl: "https://i.imgur.com/GYQ8Q89.jpg",
+    date: "12 Jan 2025",
     time: "14:00 - 15:00",
-    price: 50000,
+    price: 70000,
     status: "Completed",
-  ),
-  OrderModel(
-    courtName: "Lapangan Badminton B",
-    date: "2025-01-08",
-    time: "09:00 - 10:00",
-    price: 30000,
-    status: "Canceled",
   ),
 ];
