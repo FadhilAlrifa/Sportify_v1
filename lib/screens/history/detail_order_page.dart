@@ -138,7 +138,7 @@ class DetailOrderPage extends StatelessWidget {
                     onPressed: () => downloadPdf(),
                     icon: const Icon(Icons.picture_as_pdf),
                     label: const Text('Download PDF'),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green.shade700, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green.shade700,foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                   ),
                 ),
               ]),
