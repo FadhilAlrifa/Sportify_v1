@@ -9,6 +9,7 @@ class DetailOrderPage extends StatelessWidget {
   final OrderHistory order;
   const DetailOrderPage({super.key, required this.order});
 
+  // Fungsi untuk mengunduh PDF (tetap digunakan untuk status Selesai)
   Future<void> downloadPdf() async {
     final pdf = pw.Document();
     final df = DateFormat.yMMMd();
@@ -33,9 +34,17 @@ class DetailOrderPage extends StatelessWidget {
     await Printing.layoutPdf(onLayout: (format) => pdf.save());
   }
 
+  // Fungsi yang akan dipanggil saat tombol "Bayar" ditekan
+  void _onPayPressed(BuildContext context) {
+    // TODO: Implementasi logika pembayaran di sini
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Simulasi: Melakukan proses pembayaran...')),
+    );
+  }
+
   Color _statusColor(String s) {
     final st = s.toLowerCase();
-    if (st.contains('complete')) return Colors.green;
+    if (st.contains('selesai') || st.contains('complete')) return Colors.green;
     if (st.contains('cancel')) return Colors.red;
     if (st.contains('pending')) return Colors.orange;
     return Colors.grey;
@@ -44,6 +53,13 @@ class DetailOrderPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusColor = _statusColor(order.status);
+    final isPending = order.status.toLowerCase().contains('pending');
+    
+    // Warna hijau yang lebih mendekati gambar (misalnya, hijau dari Colors.green.shade600 atau custom)
+    // Saya menggunakan kode warna yang mendekati hijau mint/teal dari gambar: 0xFF00A86B.
+    const Color customGreen = Color(0xFF00A86B); 
+    // Atau menggunakan warna bawaan jika ingin lebih sederhana: Colors.green.shade600 
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
       appBar: AppBar(
@@ -129,19 +145,72 @@ class DetailOrderPage extends StatelessWidget {
 
             const SizedBox(height: 28),
 
-            // action buttons
+            // action buttons and price summary (Disesuaikan warnanya)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => downloadPdf(),
-                    icon: const Icon(Icons.picture_as_pdf),
-                    label: const Text('Download PDF'),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green.shade700,foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                  ),
-                ),
-              ]),
+              child: isPending
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Harga di Kiri (Disesuaikan dengan format gambar)
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                                'Total Pembayaran:', 
+                                style: TextStyle(color: Colors.black54, fontSize: 16, fontWeight: FontWeight.w500) // Font sedikit lebih tebal dan warna mendekati gelap
+                            ), 
+                            const SizedBox(height: 2),
+                            Text(
+                              'Rp ${order.price}', 
+                              style: const TextStyle(
+                                fontSize: 28, 
+                                fontWeight: FontWeight.bold, 
+                                color: customGreen, // Menggunakan warna hijau yang disesuaikan
+                              )
+                            ),
+                          ],
+                        ),
+
+                        // Tombol Bayar di Kanan (Disesuaikan dengan format gambar)
+                        ElevatedButton(
+                          onPressed: () => _onPayPressed(context),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: customGreen, // Menggunakan warna hijau yang disesuaikan
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 30),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), 
+                            elevation: 4, 
+                          ),
+                          child: const Text(
+                            'BAYAR', // Teks kapital
+                            style: TextStyle(
+                              fontSize: 18, 
+                              fontWeight: FontWeight.w900, 
+                              letterSpacing: 1.0
+                            ), 
+                          ),
+                        ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        // Tombol Download PDF (untuk status non-pending)
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () => downloadPdf(),
+                            icon: const Icon(Icons.picture_as_pdf),
+                            label: const Text('Download PDF'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green.shade700,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
             ),
 
             const SizedBox(height: 26),
@@ -151,6 +220,7 @@ class DetailOrderPage extends StatelessWidget {
     );
   }
 
+  // Widget helper lainnya tetap sama
   Widget _imageFallback() {
     return Container(
       color: Colors.grey[300],
