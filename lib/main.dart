@@ -9,7 +9,7 @@ import 'providers/court_provider.dart';
 import 'providers/booking_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home/home_screen.dart';
-
+import 'screens/vendor/vendor_home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -49,9 +49,13 @@ class SportifyApp extends StatelessWidget {
         home: Consumer<AuthProvider>(
           builder: (context, auth, _) {
             if (auth.isLoggedIn) {
-              return const HomeScreen();
+              // LOGIKA PENGECEKAN ROLE
+              if (auth.role == 'vendor') {
+                return const VendorHomeScreen(); // Masuk Dashboard Vendor
+              } else {
+                return const HomeScreen(); // Masuk Dashboard User Biasa
+              }
             }
-            // Jika belum Login
             return const LoginScreen();
           },
         ),

@@ -2,85 +2,118 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+
 class AuthProvider with ChangeNotifier {
   // Instance Firebase
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Variabel User saat ini
+  // Variabel State
   User? _user;
-  User? get user => _user;
+  String? _role; // Menyimpan role: 'user' atau 'vendor'
 
-  // Cek apakah user sedang login
+  // Getters untuk diakses UI
+  User? get user => _user;
+  String? get role => _role;
   bool get isLoggedIn => _user != null;
 
+  // Constructor: Jalankan listener saat provider dibuat
   AuthProvider() {
     _init();
   }
 
-  // Listener: Mendeteksi perubahan status login secara otomatis
-  // (Misal: User menutup aplikasi lalu membukanya lagi)
+  // --- 1. INISIALISASI (AUTO LOGIN) ---
   void _init() {
-    _auth.authStateChanges().listen((User? user) {
+    _auth.authStateChanges().listen((User? user) async {
       _user = user;
-      notifyListeners(); // Kabari UI bahwa status login berubah
+      
+      if (user != null) {
+        // Jika user ditemukan (sedang login), ambil Role-nya dari database
+        await _fetchUserRole(user.uid);
+      } else {
+        // Jika logout, kosongkan role
+        _role = null;
+      }
+      notifyListeners();
     });
   }
 
-  // --- FUNGSI LOGIN ---
-  // Mengembalikan String? (Null jika sukses, Pesan Error jika gagal)
-  Future<String?> login(String email, String password) async {
+  // --- 2. FUNGSI AMBIL ROLE DARI FIRESTORE ---
+  Future<void> _fetchUserRole(String uid) async {
     try {
-      await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      return null; // SUKSES
-    } on FirebaseAuthException catch (e) {
-      // Error spesifik dari Firebase (misal: password salah)
-      return e.message;
+      final doc = await _firestore.collection('users').doc(uid).get();
+      if (doc.exists) {
+        // Ambil field 'role', jika tidak ada default ke 'user'
+        _role = doc.data()?['role'] ?? 'user';
+        notifyListeners();
+      }
     } catch (e) {
-      return "Terjadi kesalahan: $e";
+      print("Error mengambil role: $e");
     }
   }
 
-  // --- FUNGSI REGISTER ---
-  // Menerima Nama, Email, Password
-  Future<String?> register(String name, String email, String password) async {
+  // --- 3. FUNGSI LOGIN ---
+  Future<String?> login(String email, String password) async {
     try {
-      // 1. Buat Akun di Authentication
+      // a. Login ke Authentication
+      UserCredential cred = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      // b. Segera ambil data Role agar UI tahu harus ke halaman mana
+      if (cred.user != null) {
+        await _fetchUserRole(cred.user!.uid);
+      }
+
+      return null; // Sukses (return null artinya tidak ada error)
+    } on FirebaseAuthException catch (e) {
+      return e.message; // Kembalikan pesan error dari Firebase
+    } catch (e) {
+      return "Gagal login: $e";
+    }
+  }
+
+  // --- 4. FUNGSI REGISTER (Updated dengan Role) ---
+  Future<String?> register(String name, String email, String password, {String role = 'user'}) async {
+    try {
+      // a. Buat Akun di Authentication
       UserCredential cred = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      // 2. Simpan Data Tambahan ke Firestore Database
+      // b. Simpan Data User + Role ke Firestore
       if (cred.user != null) {
-        // Update Nama di Profil Auth (biar mudah diakses)
+        // Update Nama di Auth Profil
         await cred.user!.updateDisplayName(name);
 
-        // Simpan ke koleksi 'users'
+        // Simpan data lengkap ke database
         await _firestore.collection('users').doc(cred.user!.uid).set({
           'uid': cred.user!.uid,
           'name': name,
           'email': email,
+          'role': role, // <--- PENTING: Role disimpan di sini
           'createdAt': DateTime.now().toIso8601String(),
-          'role': 'user', // Default role
-          'profileImage': '', // Kosong dulu
+          'profileImage': '', // Field kosong untuk foto profil nanti
         });
+
+        // Set role di memori lokal agar aplikasi langsung tahu
+        _role = role;
+        notifyListeners();
       }
-      return null; // SUKSES
+      return null; // Sukses
     } on FirebaseAuthException catch (e) {
-      return e.message; // Kembalikan pesan error asli dari Firebase
+      return e.message;
     } catch (e) {
       return "Gagal mendaftar: $e";
     }
   }
 
-  // --- FUNGSI LOGOUT ---
+  // --- 5. FUNGSI LOGOUT ---
   Future<void> logout() async {
     await _auth.signOut();
-    // notifyListeners() tidak perlu dipanggil manual, 
-    // karena listener di _init() otomatis mendeteksi perubahan ini.
+    _role = null;
+    notifyListeners();
   }
 }

@@ -15,6 +15,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   
+  // State untuk Role Vendor
+  bool _isVendor = false; 
+  
   bool _isLoading = false;
   final _formKey = GlobalKey<FormState>();
 
@@ -89,6 +92,38 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   validator: (value) =>
                       value!.length < 6 ? "Password minimal 6 karakter" : null,
                 ),
+                const SizedBox(height: 24),
+
+                // --- OPSI ROLE (VENDOR) ---
+                Container(
+                  decoration: BoxDecoration(
+                    color: _isVendor ? Colors.green.shade50 : Colors.white,
+                    border: Border.all(
+                      color: _isVendor ? Colors.green : Colors.grey.shade300,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: CheckboxListTile(
+                    title: const Text(
+                      "Daftar sebagai Penyedia Lapangan",
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    subtitle: const Text(
+                      "Centang ini jika Anda pemilik venue/lapangan",
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    value: _isVendor,
+                    activeColor: Colors.green,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                    controlAffinity: ListTileControlAffinity.leading, // Checkbox di kiri
+                    onChanged: (bool? value) {
+                      setState(() {
+                        _isVendor = value ?? false;
+                      });
+                    },
+                  ),
+                ),
+                
                 const SizedBox(height: 32),
 
                 // --- TOMBOL REGISTER ---
@@ -110,9 +145,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           child: CircularProgressIndicator(
                               color: Colors.white, strokeWidth: 2),
                         )
-                      : const Text(
-                          "DAFTAR SEKARANG",
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      : Text(
+                          _isVendor ? "DAFTAR SEBAGAI MITRA" : "DAFTAR SEKARANG",
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                 ),
                 
@@ -154,7 +189,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // Logika Register
+  // Logika Register Updated dengan ROLE
   Future<void> _handleRegister() async {
     // 1. Validasi Form
     if (!_formKey.currentState!.validate()) return;
@@ -162,11 +197,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
     // 2. Mulai Loading
     setState(() => _isLoading = true);
 
-    // 3. Panggil Provider (Perhatikan Koma nya)
+    // 3. Panggil Provider
+    // Tentukan role berdasarkan checkbox
+    String selectedRole = _isVendor ? 'vendor' : 'user';
+
     final error = await context.read<AuthProvider>().register(
       _nameCtrl.text.trim(),   // Nama
       _emailCtrl.text.trim(),  // Email
       _passCtrl.text.trim(),   // Password
+      role: selectedRole,      // <--- Kirim Role ke AuthProvider
     );
 
     // 4. Stop Loading
@@ -178,8 +217,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (mounted) {
         Navigator.pop(context); // Kembali ke Login
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Akun berhasil dibuat! Silakan login."),
+          SnackBar(
+            content: Text(_isVendor 
+              ? "Akun Mitra berhasil dibuat! Silakan login." 
+              : "Akun berhasil dibuat! Silakan login."),
             backgroundColor: Colors.green,
           ),
         );
