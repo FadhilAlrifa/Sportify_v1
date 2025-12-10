@@ -125,7 +125,7 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
                     date: widget.selectedDate,
                     time: widget.selectedTime,
                     duration: widget.duration,
-                    totalCost: widget.totalCost,
+                    totalCost: widget.totalCost, courtName: '', basePrice: 100000,
                   ),
                 ),
               );
