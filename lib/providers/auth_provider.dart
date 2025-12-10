@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-
 class AuthProvider with ChangeNotifier {
   // Instance Firebase
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -95,7 +94,7 @@ class AuthProvider with ChangeNotifier {
           'email': email,
           'role': role, // <--- PENTING: Role disimpan di sini
           'createdAt': DateTime.now().toIso8601String(),
-          'profileImage': '', // Field kosong untuk foto profil nanti
+          'profileImage': '', 
         });
 
         // Set role di memori lokal agar aplikasi langsung tahu
@@ -110,10 +109,10 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  // --- 5. FUNGSI LOGOUT ---
+  // --- 5. FUNGSI LOGOUT (Ini yang dibutuhkan ProfileScreen) ---
   Future<void> logout() async {
     await _auth.signOut();
     _role = null;
-    notifyListeners();
+    notifyListeners(); // Memberi tahu main.dart untuk refresh ke LoginScreen
   }
 }

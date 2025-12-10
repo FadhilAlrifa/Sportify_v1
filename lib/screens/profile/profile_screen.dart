@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Jangan lupa import ini
-import '../../routes.dart'; // Sesuaikan path routes Anda
+// PENTING: Gunakan 'hide AuthProvider' agar tidak bentrok dengan Provider buatanmu
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
+import 'package:provider/provider.dart'; 
 
-// Import Halaman Baru
+// Import Provider buatanmu
+import '../../providers/auth_provider.dart'; 
+
+// Import Halaman Detail
 import 'account_detail_screen.dart';
 import 'payment_method_screen.dart';
 import 'notification_screen.dart';
@@ -12,7 +16,7 @@ import 'help_support_screen.dart';
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
-  // --- LOGIKA LOGOUT ---
+  // --- LOGIKA LOGOUT (SUDAH BENAR) ---
   void _handleLogout(BuildContext context) {
     showDialog(
       context: context,
@@ -20,15 +24,18 @@ class ProfileScreen extends StatelessWidget {
         title: const Text("Konfirmasi Keluar"),
         content: const Text("Yakin ingin keluar dari aplikasi?"),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Batal")),
+          TextButton(
+            onPressed: () => Navigator.pop(context), 
+            child: const Text("Batal")
+          ),
           TextButton(
             onPressed: () async {
+              // 1. Tutup Dialog
               Navigator.pop(context);
-              await FirebaseAuth.instance.signOut();
-              if (context.mounted) {
-                // Pastikan 'Routes.login' ada di routes.dart Anda
-                Navigator.of(context).pushNamedAndRemoveUntil(Routes.login, (route) => false);
-              }
+
+              // 2. Panggil Provider Logout
+              // Ini akan otomatis me-refresh main.dart ke halaman Login
+              await Provider.of<AuthProvider>(context, listen: false).logout();
             },
             child: const Text("Keluar", style: TextStyle(color: Colors.red)),
           ),
@@ -44,7 +51,8 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final User? user = FirebaseAuth.instance.currentUser;
+    // Ambil user dari Provider
+    final user = Provider.of<AuthProvider>(context).user;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -53,13 +61,8 @@ class ProfileScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        automaticallyImplyLeading: false, // Hilangkan back button default
-        actions: [
-          IconButton(
-            onPressed: () {}, 
-            icon: const Icon(Ionicons.settings_outline, color: Colors.black),
-          )
-        ],
+        automaticallyImplyLeading: false, 
+        // BAGIAN ACTIONS (ICON SETTINGS) SUDAH SAYA HAPUS DI SINI
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -99,7 +102,7 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             
-            // Nama & Email (Ambil dari Firebase Auth jika ada)
+            // Nama & Email
             Text(
               user?.displayName ?? "User Sportify",
               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
@@ -110,12 +113,13 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 30),
             
-            // Tombol Edit (shortcut ke Detail Akun)
+            // Tombol Edit
             SizedBox(
               width: 200,
               height: 45,
               child: ElevatedButton(
-                onPressed: () => _navigateTo(context, const AccountDetailScreen()),
+                // Hapus const agar tidak error
+                onPressed: () => _navigateTo(context, AccountDetailScreen()),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF00B380),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
@@ -125,26 +129,26 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 30),
 
-            // --- MENU PILIHAN (SUDAH BERFUNGSI) ---
+            // --- MENU PILIHAN ---
             _buildProfileItem(
               icon: Ionicons.person_outline, 
               title: "Detail Akun",
-              onTap: () => _navigateTo(context, const AccountDetailScreen()),
+              onTap: () => _navigateTo(context, AccountDetailScreen()),
             ),
             _buildProfileItem(
               icon: Ionicons.card_outline, 
               title: "Metode Pembayaran",
-              onTap: () => _navigateTo(context, const PaymentMethodScreen()),
+              onTap: () => _navigateTo(context, PaymentMethodScreen()),
             ),
             _buildProfileItem(
               icon: Ionicons.notifications_outline, 
               title: "Notifikasi",
-              onTap: () => _navigateTo(context, const NotificationScreen()),
+              onTap: () => _navigateTo(context, NotificationScreen()),
             ),
             _buildProfileItem(
               icon: Ionicons.help_circle_outline, 
               title: "Bantuan & Support",
-              onTap: () => _navigateTo(context, const HelpSupportScreen()),
+              onTap: () => _navigateTo(context, HelpSupportScreen()),
             ),
             
             const SizedBox(height: 20),
