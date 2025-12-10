@@ -110,7 +110,7 @@ class _BookingScreenState extends State<BookingScreen> {
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
         title: Text(
-          "Booking Lapangan: ${widget.courtId}",
+          "Booking Lapangan:",
           style:
               const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),

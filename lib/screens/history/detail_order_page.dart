@@ -9,12 +9,17 @@ class DetailOrderPage extends StatelessWidget {
   final OrderHistory order;
   const DetailOrderPage({super.key, required this.order});
 
-  // Fungsi untuk mengunduh PDF (tetap digunakan untuk status Selesai)
   Future<void> downloadPdf() async {
     final pdf = pw.Document();
     final df = DateFormat.yMMMd();
+
+    // Formatting Harga untuk PDF
+    final priceFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    final formattedPrice = priceFormatter.format(order.price);
+
     pdf.addPage(
       pw.Page(
+        pageFormat: PdfPageFormat.a4,
         build: (pw.Context context) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
@@ -23,7 +28,7 @@ class DetailOrderPage extends StatelessWidget {
             pw.Text("Nama Lapangan: ${order.courtName}"),
             pw.Text("Tanggal: ${order.date}"),
             pw.Text("Waktu: ${order.time}"),
-            pw.Text("Harga: Rp ${order.price}"),
+            pw.Text("Harga: $formattedPrice"),
             pw.Text("Status: ${order.status}"),
             pw.SizedBox(height: 16),
             pw.Text("Generated: ${df.format(DateTime.now())}", style: pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
@@ -34,32 +39,102 @@ class DetailOrderPage extends StatelessWidget {
     await Printing.layoutPdf(onLayout: (format) => pdf.save());
   }
 
-  // Fungsi yang akan dipanggil saat tombol "Bayar" ditekan
-  void _onPayPressed(BuildContext context) {
-    // TODO: Implementasi logika pembayaran di sini
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Simulasi: Melakukan proses pembayaran...')),
+  Color _statusColor(String s) {
+    final st = s.toLowerCase();
+    if (st.contains('selesai') || st.contains('completed')) return Colors.green;
+    if (st.contains('pending')) return Colors.orange;
+    if (st.contains('cancel')) return Colors.red;
+    return Colors.grey;
+  }
+
+  Widget _imageFallback() {
+    return Container(
+      color: Colors.grey[300],
+      alignment: Alignment.center,
+      child: const Icon(Icons.broken_image, size: 64, color: Colors.white70),
     );
   }
 
-  Color _statusColor(String s) {
-    final st = s.toLowerCase();
-    if (st.contains('selesai') || st.contains('complete')) return Colors.green;
-    if (st.contains('cancel')) return Colors.red;
-    if (st.contains('pending')) return Colors.orange;
-    return Colors.grey;
+  Widget _rowItem(IconData icon, String label, String value, {bool isBold = false}) {
+    return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Icon(icon, color: Colors.green, size: 26),
+      const SizedBox(width: 12),
+      Expanded(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(label, style: const TextStyle(color: Colors.grey)),
+          const SizedBox(height: 6),
+          Text(value, style: TextStyle(fontSize: 16, fontWeight: isBold ? FontWeight.w700 : FontWeight.w500)),
+        ]),
+      ),
+    ]);
   }
+
+  // WIDGET BARU: Menentukan tombol aksi berdasarkan status
+  Widget _buildActionButton(BuildContext context) {
+    final isPending = order.status.toLowerCase().contains('pending');
+    final isSelesai = order.status.toLowerCase().contains('selesai') || order.status.toLowerCase().contains('completed');
+
+    if (isPending) {
+      // Skenario 1: Status Pending (Tetap seperti sebelumnya)
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.orange.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.orange.shade300)
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.watch_later_outlined, color: Colors.orange.shade700, size: 24),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Pesanan sedang diproses. Menunggu konfirmasi dari Admin.',
+                  style: TextStyle(color: Color(0xFFE65100), fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else if (isSelesai) {
+      // Skenario 2: Status Selesai (Tombol Download PDF diperbesar)
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Row(children: [
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: () => downloadPdf(),
+              icon: const Icon(Icons.picture_as_pdf),
+              label: const Text(
+                'Download PDF',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold), 
+              ),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green.shade700,
+                  foregroundColor: Colors.white,
+                  // Padding telah diatur ke vertical: 20
+                  padding: const EdgeInsets.symmetric(vertical: 20), 
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            ),
+          ),
+        ]),
+      );
+    }
+    
+    // Default/Status Lainnya
+    return const SizedBox.shrink();
+  }
+
 
   @override
   Widget build(BuildContext context) {
     final statusColor = _statusColor(order.status);
-    final isPending = order.status.toLowerCase().contains('pending');
+    final priceFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    final formattedPrice = priceFormatter.format(order.price);
     
-    // Warna hijau yang lebih mendekati gambar (misalnya, hijau dari Colors.green.shade600 atau custom)
-    // Saya menggunakan kode warna yang mendekati hijau mint/teal dari gambar: 0xFF00A86B.
-    const Color customGreen = Color(0xFF00A86B); 
-    // Atau menggunakan warna bawaan jika ingin lebih sederhana: Colors.green.shade600 
-
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
       appBar: AppBar(
@@ -71,7 +146,7 @@ class DetailOrderPage extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // hero image with bottom curve
+            // hero image
             Stack(
               children: [
                 SizedBox(
@@ -79,7 +154,7 @@ class DetailOrderPage extends StatelessWidget {
                   width: double.infinity,
                   child: order.imageUrl.startsWith('http')
                       ? Image.network(order.imageUrl, fit: BoxFit.cover, errorBuilder: (c, e, s) => _imageFallback())
-                      : Image.asset(order.imageUrl, fit: BoxFit.cover),
+                      : Image.asset(order.imageUrl, fit: BoxFit.cover, errorBuilder: (c, e, s) => _imageFallback()),
                 ),
                 // gradient overlay
                 Positioned.fill(
@@ -94,7 +169,7 @@ class DetailOrderPage extends StatelessWidget {
                   bottom: -20,
                   left: 0,
                   right: 0,
-                  child: Container(height: 40, decoration: const BoxDecoration(color: Colors.transparent)),
+                  child: Container(height: 40, decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(30)))),
                 ),
               ],
             ),
@@ -121,7 +196,7 @@ class DetailOrderPage extends StatelessWidget {
                     const Divider(height: 22),
                     _rowItem(Icons.access_time, 'Waktu', order.time),
                     const Divider(height: 22),
-                    _rowItem(Icons.payments, 'Harga', 'Rp ${order.price}', isBold: true),
+                    _rowItem(Icons.payments, 'Harga', formattedPrice, isBold: true),
                     const Divider(height: 22),
                     Row(
                       children: [
@@ -145,101 +220,13 @@ class DetailOrderPage extends StatelessWidget {
 
             const SizedBox(height: 28),
 
-            // action buttons and price summary (Disesuaikan warnanya)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: isPending
-                  ? Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Harga di Kiri (Disesuaikan dengan format gambar)
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                                'Total Pembayaran:', 
-                                style: TextStyle(color: Colors.black54, fontSize: 16, fontWeight: FontWeight.w500) // Font sedikit lebih tebal dan warna mendekati gelap
-                            ), 
-                            const SizedBox(height: 2),
-                            Text(
-                              'Rp ${order.price}', 
-                              style: const TextStyle(
-                                fontSize: 28, 
-                                fontWeight: FontWeight.bold, 
-                                color: customGreen, // Menggunakan warna hijau yang disesuaikan
-                              )
-                            ),
-                          ],
-                        ),
-
-                        // Tombol Bayar di Kanan (Disesuaikan dengan format gambar)
-                        ElevatedButton(
-                          onPressed: () => _onPayPressed(context),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: customGreen, // Menggunakan warna hijau yang disesuaikan
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 30),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), 
-                            elevation: 4, 
-                          ),
-                          child: const Text(
-                            'BAYAR', // Teks kapital
-                            style: TextStyle(
-                              fontSize: 18, 
-                              fontWeight: FontWeight.w900, 
-                              letterSpacing: 1.0
-                            ), 
-                          ),
-                        ),
-                      ],
-                    )
-                  : Row(
-                      children: [
-                        // Tombol Download PDF (untuk status non-pending)
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () => downloadPdf(),
-                            icon: const Icon(Icons.picture_as_pdf),
-                            label: const Text('Download PDF'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green.shade700,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-            ),
+            // action buttons (Mengganti bagian lama dengan _buildActionButton)
+            _buildActionButton(context), 
 
             const SizedBox(height: 26),
           ],
         ),
       ),
     );
-  }
-
-  // Widget helper lainnya tetap sama
-  Widget _imageFallback() {
-    return Container(
-      color: Colors.grey[300],
-      alignment: Alignment.center,
-      child: const Icon(Icons.broken_image, size: 64, color: Colors.white70),
-    );
-  }
-
-  Widget _rowItem(IconData icon, String label, String value, {bool isBold = false}) {
-    return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Icon(icon, color: Colors.green, size: 26),
-      const SizedBox(width: 12),
-      Expanded(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label, style: const TextStyle(color: Colors.grey)),
-          const SizedBox(height: 6),
-          Text(value, style: TextStyle(fontSize: 16, fontWeight: isBold ? FontWeight.w700 : FontWeight.w500)),
-        ]),
-      ),
-    ]);
   }
 }
