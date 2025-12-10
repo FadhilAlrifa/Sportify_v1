@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sportify/screens/payment/upload_payment_proof_page.dart';
 import 'payment_summary_widget.dart';
 import 'payment_method_item.dart';
 
@@ -115,7 +116,19 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
 
           ElevatedButton(
             onPressed: () {
-              print("Metode pembayaran: $selectedPayment");
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => UploadPaymentProofPage(
+                    paymentMethod: selectedPayment,
+                    courtId: widget.courtId,
+                    date: widget.selectedDate,
+                    time: widget.selectedTime,
+                    duration: widget.duration,
+                    totalCost: widget.totalCost,
+                  ),
+                ),
+              );
             },
             style: ElevatedButton.styleFrom(
               minimumSize: const Size(double.infinity, 48),
