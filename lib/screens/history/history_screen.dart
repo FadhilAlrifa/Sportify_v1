@@ -59,7 +59,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF6F7F9),
       appBar: AppBar(
-        title: const Text('Riwayat Pemesanan', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Riwayat Pemesanan', style: TextStyle(color: Colors.black)),
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0.6,

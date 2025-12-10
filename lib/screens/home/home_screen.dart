@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../routes.dart';
 
 import '../../widgets/navbar.dart'; 
+import '../../widgets/category_list.dart'; // Import widget kategori
+
 import '../profile/profile_screen.dart';
 import '../history/history_screen.dart';
 
@@ -18,6 +22,9 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0; 
   final TextEditingController searchC = TextEditingController();
 
+  // 1. VARIABLE STATE UNTUK KATEGORI
+  // Default 'All' artinya menampilkan semua data
+  String _selectedCategory = "All"; 
 
   void _onItemTapped(int index) {
     setState(() {
@@ -25,12 +32,19 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // 2. FUNGSI GANTI KATEGORI
+  void _onCategorySelected(String category) {
+    setState(() {
+      _selectedCategory = category;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<Widget> screens = [
-      _buildHomeContent(),                  // Index 0: Home 
-      const HistoryScreen(),                // Index 1: History
-      const ProfileScreen(),                // Index 2: Profil
+      _buildHomeContent(),                  
+      const HistoryScreen(),               
+      const ProfileScreen(),               
     ];
 
     return Scaffold(
@@ -43,7 +57,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- WIDGET KONTEN KHUSUS HOME ---
   Widget _buildHomeContent() {
     return SingleChildScrollView(
       child: Column(
@@ -62,7 +75,6 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start, 
               children: [
-                // Search Bar
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14),
                   height: 46,
@@ -89,66 +101,61 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 18),
-                const Text("Selamat Datang,",
-                    style: TextStyle(color: Colors.white, fontSize: 17)),
-                const Text("User Sportify",
-                    style: TextStyle(
+                const Text("Selamat Datang,", style: TextStyle(color: Colors.white, fontSize: 17)),
+                Consumer<AuthProvider>(
+                  builder: (context, auth, _) {
+                    // Ambil nama dari user yang sedang login
+                    // Jika nama kosong/null, tampilkan "User Sportify" sebagai cadangan
+                    String displayName = auth.user?.displayName ?? "User Sportify";
+                    
+                    return Text(
+                      displayName, // <--- Variabel Nama Dinamis
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 24,
-                        fontWeight: FontWeight.bold)),
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis, // Biar tidak berantakan kalau nama panjang
+                    );
+                  },
+                ),
               ],
             ),
           ),
 
-          // List Kategori
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
             child: Text("Kategori Olahraga",
-                style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Colors.blueGrey.shade800)),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blueGrey.shade800)),
           ),
-          SizedBox(
-            height: 80,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              children: [
-                _kategori("Futsal", Ionicons.football_outline, Colors.blue),
-                _kategori("Badminton", Ionicons.tennisball_outline, Colors.pink),
-                _kategori("Basket", Ionicons.basketball_outline, Colors.orange),
-                _kategori("Voli", Ionicons.body_outline, Colors.green),
-                _kategori("Tenis", Ionicons.tennisball, Colors.redAccent),
-                _kategori("Lainnya", Ionicons.add, Colors.grey),
-              ],
-            ),
-          ),
+          
+          // 3. PANGGIL CATEGORY LIST DENGAN PARAMETER
+          CategoryList(
+            selectedCategory: _selectedCategory,
+            onTap: _onCategorySelected, // Kirim fungsi pengganti state
+          ), 
 
-          // Grid Lapangan (DARI FIREBASE)
           const Padding(
             padding: EdgeInsets.fromLTRB(20, 18, 20, 10),
             child: Text(
-              "Lapangan Rating Tertinggi",
+              "Daftar Lapangan", // Judul saya ganti sedikit agar lebih umum
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
             ),
           ),
           
-          // --- STREAM BUILDER ---
+          // Stream Builder
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance.collection('venues').snapshots(),
             builder: (context, snapshot) {
-              if (snapshot.hasError) {
-                return const Center(child: Text("Terjadi kesalahan memuat data"));
-              }
-
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
+              if (snapshot.hasError) return const Center(child: Text("Error memuat data"));
+              if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
 
               var docs = snapshot.data!.docs;
 
-              // Filter Data
+              // --- LOGIKA FILTERING GANDA (SEARCH + KATEGORI) ---
+              
+              // Filter 1: Berdasarkan Search Bar
               if (searchC.text.isNotEmpty) {
                 docs = docs.where((doc) {
                   var data = doc.data() as Map<String, dynamic>;
@@ -157,11 +164,35 @@ class _HomeScreenState extends State<HomeScreen> {
                 }).toList();
               }
 
+              // Filter 2: Berdasarkan Kategori yang Dipilih
+              // Kita hanya filter jika kategori bukan "All"
+              if (_selectedCategory != "All") {
+                docs = docs.where((doc) {
+                  var data = doc.data() as Map<String, dynamic>;
+                  String type = (data['type'] ?? '').toString(); // Pastikan field di firebase adalah 'type'
+                  
+                  // Bandingkan type di firebase dengan nama kategori
+                  // Contoh: "Futsal" == "Futsal"
+                  return type.toLowerCase() == _selectedCategory.toLowerCase();
+                }).toList();
+              }
+
+              // Cek jika hasil kosong setelah difilter
               if (docs.isEmpty) {
-                return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(20),
-                    child: Text("Tidak ada lapangan ditemukan."),
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(40),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Ionicons.search_outline, size: 60, color: Colors.grey.shade300),
+                      const SizedBox(height: 10),
+                      Text(
+                        "Tidak ada lapangan $_selectedCategory ditemukan.",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey.shade500),
+                      ),
+                    ],
                   ),
                 );
               }
@@ -176,31 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- Helper Widgets ---
-  Widget _kategori(String nama, IconData icon, Color warna) {
-    return Container(
-      margin: const EdgeInsets.only(right: 14),
-      width: 72,
-      child: Column(
-        children: [
-          Container(
-            height: 52,
-            width: 52,
-            decoration: BoxDecoration(
-              color: warna.withOpacity(.18),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(icon, color: warna, size: 28),
-          ),
-          const SizedBox(height: 5),
-          Text(nama,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 11)),
-        ],
-      ),
-    );
-  }
-
+  // ... (Fungsi _venueGrid di bawah SAMA PERSIS dengan sebelumnya, tidak perlu diubah)
   Widget _venueGrid(List<QueryDocumentSnapshot> data) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -218,8 +225,7 @@ class _HomeScreenState extends State<HomeScreen> {
         itemBuilder: (_, i) {
           final venueData = data[i].data() as Map<String, dynamic>;
           final venueId = data[i].id; 
-
-          // AMBIL DATA DARI FIREBASE
+          
           String name = venueData['name'] ?? 'Tanpa Nama';
           String loc = venueData['address'] ?? 'Alamat tidak tersedia';
           double rating = (venueData['rating'] ?? 0.0).toDouble();
@@ -237,16 +243,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 borderRadius: BorderRadius.circular(18),
                 color: Colors.white,
                 boxShadow: const [
-                  BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 5,
-                      offset: Offset(0, 2))
+                  BoxShadow(color: Colors.black12, blurRadius: 5, offset: Offset(0, 2))
                 ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- GAMBAR DARI FIREBASE (Network Image) ---
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
                     child: imageUrl.isNotEmpty
@@ -255,55 +257,25 @@ class _HomeScreenState extends State<HomeScreen> {
                             height: 105,
                             width: double.infinity,
                             fit: BoxFit.cover,
-                            // Handle Error jika link rusak
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                height: 105,
-                                color: Colors.grey[300],
-                                child: const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
-                              );
-                            },
-                            // Handle Loading saat gambar di-download
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return Container(
-                                height: 105,
-                                color: Colors.grey[200],
-                                child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                              );
-                            },
+                            errorBuilder: (ctx, err, stack) => Container(
+                              height: 105, color: Colors.grey[300], child: const Icon(Icons.broken_image, color: Colors.grey)
+                            ),
                           )
-                        : Container( // Fallback jika imageUrl kosong di Firebase
-                            height: 105,
-                            width: double.infinity,
-                            color: Colors.grey[300],
-                            child: const Center(child: Icon(Icons.image_not_supported, color: Colors.grey)),
-                          ),
+                        : Container(height: 105, color: Colors.grey[300], child: const Icon(Icons.image, color: Colors.grey)),
                   ),
-                  
                   Padding(
                     padding: const EdgeInsets.all(9),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13.5)),
-                        Text(loc,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                                color: Colors.grey[600], fontSize: 11)),
+                        Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
+                        Text(loc, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey[600], fontSize: 11)),
                         const SizedBox(height: 4),
                         Row(
                           children: [
                             const Icon(Icons.star, size: 14, color: Colors.amber),
                             const SizedBox(width: 4),
-                            Text("$rating • Tersedia",
-                                style: const TextStyle(fontSize: 11))
+                            Text("$rating • Tersedia", style: const TextStyle(fontSize: 11))
                           ],
                         )
                       ],
