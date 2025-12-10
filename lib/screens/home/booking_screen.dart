@@ -58,49 +58,49 @@ class _BookingScreenState extends State<BookingScreen> {
     }
   }
 
-  void _confirmBooking(BuildContext context) {
-    if (_selectedDate == null || _selectedTime == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Mohon lengkapi Tanggal dan Waktu Booking."),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-      return;
-    }
+  // void _confirmBooking(BuildContext context) {
+  //   if (_selectedDate == null || _selectedTime == null) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       const SnackBar(
+  //         content: Text("Mohon lengkapi Tanggal dan Waktu Booking."),
+  //         backgroundColor: Colors.redAccent,
+  //       ),
+  //     );
+  //     return;
+  //   }
 
-    final total = basePrice * _selectedDuration;
+  //   final total = basePrice * _selectedDuration;
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Konfirmasi Booking"),
-        content: Text(
-            "Anda akan memesan lapangan ID: ${widget.courtId} pada tanggal ${DateFormat('dd MMM yyyy').format(_selectedDate!)} pukul ${_selectedTime} selama $_selectedDuration jam. Total biaya: Rp ${NumberFormat('#,##0', 'id_ID').format(total)}"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Batal", style: TextStyle(color: Colors.red)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("Booking berhasil! (Simulasi)"),
-                  backgroundColor: Color(0xFF00B47A),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00B47A)),
-            child: const Text("Pesan Sekarang",
-                style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
+  //   showDialog(
+  //     context: context,
+  //     builder: (context) => AlertDialog(
+  //       title: const Text("Konfirmasi Booking"),
+  //       content: Text(
+  //           "Anda akan memesan lapangan ID: ${widget.courtId} pada tanggal ${DateFormat('dd MMM yyyy').format(_selectedDate!)} pukul ${_selectedTime} selama $_selectedDuration jam. Total biaya: Rp ${NumberFormat('#,##0', 'id_ID').format(total)}"),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Navigator.pop(context),
+  //           child: const Text("Batal", style: TextStyle(color: Colors.red)),
+  //         ),
+  //         ElevatedButton(
+  //           onPressed: () {
+  //             Navigator.pop(context);
+  //             ScaffoldMessenger.of(context).showSnackBar(
+  //               const SnackBar(
+  //                 content: Text("Booking berhasil! (Simulasi)"),
+  //                 backgroundColor: Color(0xFF00B47A),
+  //               ),
+  //             );
+  //           },
+  //           style: ElevatedButton.styleFrom(
+  //               backgroundColor: const Color(0xFF00B47A)),
+  //           child: const Text("Pesan Sekarang",
+  //               style: TextStyle(color: Colors.white)),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
