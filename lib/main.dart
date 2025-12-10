@@ -10,6 +10,7 @@ import 'providers/booking_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/vendor/vendor_home_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,6 +18,12 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  await Supabase.initialize(
+    url: 'https://fsvthiragrerthjcsdzs.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzdnRoaXJhZ3JlcnRoamNzZHpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzNTgzNjEsImV4cCI6MjA4MDkzNDM2MX0.uWITztsUhovjSLN4dHtkMHdF1bxTOs42yQOpKH3r7s0',
+  );
+
   await initializeDateFormatting('id_ID', null);
 
   runApp(const SportifyApp());
