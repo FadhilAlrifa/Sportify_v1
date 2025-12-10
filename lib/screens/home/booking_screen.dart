@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:sportify/screens/payment/payment_bottom_sheet.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class BookingScreen extends StatefulWidget {
   final dynamic courtId;
@@ -15,21 +16,62 @@ class _BookingScreenState extends State<BookingScreen> {
   DateTime? _selectedDate;
   String? _selectedTime;
   int _selectedDuration = 1;
+  List<String> _availableTimes = [];
+  List<String> _bookedTimes = [];
+  bool _isLoading = true;
+  double basePrice = 100000.0; // Harga dasar per jam
 
-  final List<Map<String, dynamic>> availableTimes = const [
-    {"time": "08:00", "isBooked": false},
-    {"time": "09:00", "isBooked": false},
-    {"time": "10:00", "isBooked": true},
-    {"time": "11:00", "isBooked": false},
-    {"time": "12:00", "isBooked": false},
-    {"time": "13:00", "isBooked": false},
-    {"time": "14:00", "isBooked": true},
-    {"time": "15:00", "isBooked": false},
-    {"time": "16:00", "isBooked": false},
-    {"time": "17:00", "isBooked": false},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _fetchCourtAvailability();
+  }
 
-  final double basePrice = 150000;
+  // Fungsi untuk mengambil data jam tersedia dari Firebase
+  Future<void> _fetchCourtAvailability() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('venues')
+          .doc(widget.courtId.toString())
+          .get();
+
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+
+        // Ambil semua jam yang tersedia
+        final List<dynamic> times = data['available_times'] ?? [];
+        _availableTimes = times.map((time) => time.toString()).toList();
+
+        // Ambil jam yang sudah dibooking untuk tanggal yang dipilih
+        if (_selectedDate != null) {
+          _updateBookedTimes(data);
+        }
+      }
+    } catch (e) {
+      print("Error fetching availability: $e");
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  // Fungsi untuk update jam yang sudah dibooking
+  void _updateBookedTimes(Map<String, dynamic> data) {
+    _bookedTimes.clear();
+
+    final String formattedDate =
+        DateFormat('yyyy-MM-dd').format(_selectedDate!);
+    final List<dynamic> bookedSlots = data['booked_slots'] ?? [];
+
+    for (var slot in bookedSlots) {
+      if (slot['date'] == formattedDate) {
+        final List<dynamic> times = slot['times'] ?? [];
+        _bookedTimes.addAll(times.map((time) => time.toString()));
+        break;
+      }
+    }
+  }
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -50,57 +92,19 @@ class _BookingScreenState extends State<BookingScreen> {
         );
       },
     );
+
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
         _selectedTime = null;
+        _bookedTimes.clear();
       });
+
+      // Refresh data booking untuk tanggal yang dipilih
+      await _fetchCourtAvailability();
     }
   }
 
-  // void _confirmBooking(BuildContext context) {
-  //   if (_selectedDate == null || _selectedTime == null) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(
-  //         content: Text("Mohon lengkapi Tanggal dan Waktu Booking."),
-  //         backgroundColor: Colors.redAccent,
-  //       ),
-  //     );
-  //     return;
-  //   }
-
-  //   final total = basePrice * _selectedDuration;
-
-  //   showDialog(
-  //     context: context,
-  //     builder: (context) => AlertDialog(
-  //       title: const Text("Konfirmasi Booking"),
-  //       content: Text(
-  //           "Anda akan memesan lapangan ID: ${widget.courtId} pada tanggal ${DateFormat('dd MMM yyyy').format(_selectedDate!)} pukul ${_selectedTime} selama $_selectedDuration jam. Total biaya: Rp ${NumberFormat('#,##0', 'id_ID').format(total)}"),
-  //       actions: [
-  //         TextButton(
-  //           onPressed: () => Navigator.pop(context),
-  //           child: const Text("Batal", style: TextStyle(color: Colors.red)),
-  //         ),
-  //         ElevatedButton(
-  //           onPressed: () {
-  //             Navigator.pop(context);
-  //             ScaffoldMessenger.of(context).showSnackBar(
-  //               const SnackBar(
-  //                 content: Text("Booking berhasil! (Simulasi)"),
-  //                 backgroundColor: Color(0xFF00B47A),
-  //               ),
-  //             );
-  //           },
-  //           style: ElevatedButton.styleFrom(
-  //               backgroundColor: const Color(0xFF00B47A)),
-  //           child: const Text("Pesan Sekarang",
-  //               style: TextStyle(color: Colors.white)),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -244,10 +248,14 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Widget _buildTimeGrid() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: availableTimes.length,
+      itemCount: _availableTimes.length,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 4,
         childAspectRatio: 2.5,
@@ -255,9 +263,8 @@ class _BookingScreenState extends State<BookingScreen> {
         crossAxisSpacing: 10,
       ),
       itemBuilder: (context, index) {
-        final timeData = availableTimes[index];
-        final time = timeData["time"] as String;
-        final isBooked = timeData["isBooked"] as bool;
+        final time = _availableTimes[index];
+        final isBooked = _bookedTimes.contains(time);
         final isSelected = time == _selectedTime && !isBooked;
 
         return InkWell(
