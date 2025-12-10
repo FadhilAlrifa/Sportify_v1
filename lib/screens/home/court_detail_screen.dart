@@ -57,7 +57,7 @@ class _CourtDetailScreenState extends State<CourtDetailScreen> {
           String name = data['name'] ?? 'Nama Tidak Tersedia';
           String loc = data['address'] ?? 'Lokasi Tidak Tersedia';
           String description = data['description'] ?? 'Belum ada deskripsi untuk lapangan ini.';
-          int price = (data['price'] ?? 0).toInt();
+          // int price = (data['price'] ?? 0).toInt();
           double rating = (data['rating'] ?? 0.0).toDouble();
           String imgUrl = data['imageUrl'] ?? ''; // Jika kosong, nanti pakai placeholder
           List<dynamic> facilities = data['facilities'] ?? []; 

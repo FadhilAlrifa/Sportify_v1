@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'payment_summary_widget.dart';
 import 'payment_method_item.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PaymentBottomSheet extends StatefulWidget {
   final dynamic courtId;
@@ -24,6 +25,18 @@ class PaymentBottomSheet extends StatefulWidget {
 
 class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
   String selectedPayment = "QRIS"; // default
+
+  Future<void> saveBookingToFirestore() async {
+    await FirebaseFirestore.instance.collection('bookings').add({
+      "courtId": widget.courtId,
+      "date": widget.selectedDate,
+      "time": widget.selectedTime,
+      "duration": widget.duration,
+      "totalCost": widget.totalCost,
+      "paymentMethod": selectedPayment,
+      "createdAt": Timestamp.now(),
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -114,14 +127,34 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
           const SizedBox(height: 20),
 
           ElevatedButton(
-            onPressed: () {
-              print("Metode pembayaran: $selectedPayment");
+            onPressed: () async {
+              try {
+                await saveBookingToFirestore();
+
+                Navigator.pop(context); // Tutup BottomSheet
+                Navigator.pushNamedAndRemoveUntil(
+                    context, '/home', (route) => false);
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Booking telah berhasil!"),
+                    backgroundColor: Color(0xFF00B47A),
+                  ),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text("Gagal menyimpan booking: $e"),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(
               minimumSize: const Size(double.infinity, 48),
             ),
             child: const Text("Bayar Sekarang"),
-          ),
+          )
         ],
       ),
     );
