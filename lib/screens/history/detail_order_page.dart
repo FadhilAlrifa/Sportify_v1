@@ -12,11 +12,11 @@ class DetailOrderPage extends StatelessWidget {
   Future<void> downloadPdf() async {
     final pdf = pw.Document();
     final df = DateFormat.yMMMd();
-    // final timeFormatter = DateFormat('HH:mm');
-
-    // Formatting Harga untuk PDF
-    final priceFormatter =
-        NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    final priceFormatter = NumberFormat.currency(
+      locale: 'id_ID', 
+      symbol: 'Rp ', 
+      decimalDigits: 0
+    );
     final formattedTotal = priceFormatter.format(order.totalCost);
     final formattedPrice = priceFormatter.format(order.basePrice);
 
@@ -33,7 +33,9 @@ class DetailOrderPage extends StatelessWidget {
                 pw.Text(
                   "Sportify — Invoice",
                   style: pw.TextStyle(
-                      fontSize: 20, fontWeight: pw.FontWeight.bold),
+                    fontSize: 20, 
+                    fontWeight: pw.FontWeight.bold
+                  ),
                 ),
                 pw.Text(
                   "ID: ${order.id.substring(0, 8)}",
@@ -44,10 +46,10 @@ class DetailOrderPage extends StatelessWidget {
                 ),
               ],
             ),
-
+            
             pw.Divider(),
             pw.SizedBox(height: 15),
-
+            
             // Informasi Lapangan
             pw.Text(
               "Lapangan: ${order.courtName}",
@@ -76,11 +78,11 @@ class DetailOrderPage extends StatelessWidget {
                 fontWeight: pw.FontWeight.bold,
               ),
             ),
-
+            
             pw.SizedBox(height: 15),
             pw.Divider(),
             pw.SizedBox(height: 10),
-
+            
             // Detail Harga
             pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -94,14 +96,13 @@ class DetailOrderPage extends StatelessWidget {
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
                 pw.Text("Durasi:", style: pw.TextStyle(fontSize: 12)),
-                pw.Text("${order.duration} jam",
-                    style: pw.TextStyle(fontSize: 12)),
+                pw.Text("${order.duration} jam", style: pw.TextStyle(fontSize: 12)),
               ],
             ),
             pw.SizedBox(height: 10),
             pw.Divider(thickness: 1),
             pw.SizedBox(height: 5),
-
+            
             // Total
             pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -122,19 +123,25 @@ class DetailOrderPage extends StatelessWidget {
                 ),
               ],
             ),
-
+            
             pw.SizedBox(height: 20),
             pw.Divider(),
             pw.SizedBox(height: 10),
-
+            
             // Footer
             pw.Text(
               "Generated: ${df.format(DateTime.now())}",
-              style: pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+              style: pw.TextStyle(
+                fontSize: 10, 
+                color: PdfColors.grey700
+              ),
             ),
             pw.Text(
               "Sportify - Booking Lapangan Olahraga",
-              style: pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+              style: pw.TextStyle(
+                fontSize: 10, 
+                color: PdfColors.grey700
+              ),
             ),
           ],
         ),
@@ -143,8 +150,7 @@ class DetailOrderPage extends StatelessWidget {
     await Printing.layoutPdf(onLayout: (format) => pdf.save());
   }
 
-  Widget _buildDetailRow(IconData icon, String label, String value,
-      {Color? iconColor, bool isBold = false}) {
+  Widget _buildDetailRow(IconData icon, String label, String value, {Color? iconColor, bool isBold = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
@@ -187,20 +193,17 @@ class DetailOrderPage extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
+      ));
   }
 
-  // WIDGET untuk tombol aksi berdasarkan status
+  // WIDGET untuk tombol aksi berdasarkan status - HILANGKAN DIBATALKAN
   Widget _buildActionButton(BuildContext context) {
     final statusLower = order.status.toLowerCase();
-    final isPending =
-        statusLower.contains('pending') || statusLower.contains('menunggu');
-    final isCompleted = statusLower.contains('selesai') ||
-        statusLower.contains('completed') ||
-        statusLower.contains('confirmed');
-    final isCancelled =
-        statusLower.contains('cancel') || statusLower.contains('dibatalkan');
+    final isPending = statusLower.contains('pending') || 
+                     statusLower.contains('menunggu');
+    final isCompleted = statusLower.contains('selesai') || 
+                       statusLower.contains('completed') || 
+                       statusLower.contains('confirmed');
 
     if (isPending) {
       // Status Pending
@@ -291,50 +294,42 @@ class DetailOrderPage extends StatelessWidget {
           ],
         ),
       );
-    } else if (isCancelled) {
-      // Status Dibatalkan
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.red.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.red.shade300),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.cancel,
-                color: Colors.red.shade700,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  'Pesanan telah dibatalkan.',
-                  style: TextStyle(
-                    color: Colors.red,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
     }
 
-    // Default/Status lainnya
+    // Default/Status lainnya (termasuk dibatalkan) - tidak tampilkan apa-apa
     return const SizedBox.shrink();
   }
 
   @override
   Widget build(BuildContext context) {
-    final priceFormatter =
-        NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    final priceFormatter = NumberFormat.currency(
+      locale: 'id_ID', 
+      symbol: 'Rp ', 
+      decimalDigits: 0
+    );
     final formattedTotal = priceFormatter.format(order.totalCost);
     final formattedPrice = priceFormatter.format(order.basePrice);
+
+    // Tentukan warna status - HILANGKAN MERAH UNTUK DIBATALKAN
+    final statusLower = order.status.toLowerCase();
+    Color statusColor;
+    IconData statusIcon;
+    String displayStatus;
+    
+    if (statusLower.contains('selesai') || statusLower.contains('completed')) {
+      statusColor = Colors.green;
+      statusIcon = Icons.check_circle;
+      displayStatus = 'SELESAI';
+    } else if (statusLower.contains('pending') || statusLower.contains('menunggu')) {
+      statusColor = Colors.orange;
+      statusIcon = Icons.access_time;
+      displayStatus = 'PENDING';
+    } else {
+      // Untuk status lain (dibatalkan), gunakan warna abu-abu
+      statusColor = Colors.grey;
+      statusIcon = Icons.info;
+      displayStatus = order.status.toUpperCase();
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
@@ -400,32 +395,32 @@ class DetailOrderPage extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    // Status dengan warna
+                    // Status dengan warna - HILANGKAN MERAH
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 10,
                       ),
                       decoration: BoxDecoration(
-                        color: order.statusColor.withOpacity(0.12),
+                        color: statusColor.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: order.statusColor.withOpacity(0.3),
+                          color: statusColor.withOpacity(0.3),
                         ),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            order.statusIcon,
-                            color: order.statusColor,
+                            statusIcon,
+                            color: statusColor,
                             size: 20,
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            order.status.toUpperCase(),
+                            displayStatus,
                             style: TextStyle(
-                              color: order.statusColor,
+                              color: statusColor,
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                             ),
@@ -443,7 +438,7 @@ class DetailOrderPage extends StatelessWidget {
                       order.courtName,
                       iconColor: const Color(0xFF00B47A),
                     ),
-
+                    
                     Divider(color: Colors.grey.shade200),
 
                     _buildDetailRow(
@@ -452,7 +447,7 @@ class DetailOrderPage extends StatelessWidget {
                       order.formattedDate,
                       iconColor: Colors.blue,
                     ),
-
+                    
                     Divider(color: Colors.grey.shade200),
 
                     _buildDetailRow(
@@ -461,7 +456,7 @@ class DetailOrderPage extends StatelessWidget {
                       '${order.time} (${order.duration} jam)',
                       iconColor: Colors.green,
                     ),
-
+                    
                     Divider(color: Colors.grey.shade200),
 
                     _buildDetailRow(
@@ -470,7 +465,7 @@ class DetailOrderPage extends StatelessWidget {
                       order.paymentMethod,
                       iconColor: Colors.purple,
                     ),
-
+                    
                     Divider(color: Colors.grey.shade200),
 
                     // Detail harga

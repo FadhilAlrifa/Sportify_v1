@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sportify/routes.dart';
 import '../../providers/auth_provider.dart';
 
 // Import halaman fitur vendor
@@ -131,18 +132,67 @@ class VendorHomeScreen extends StatelessWidget {
             
             const SizedBox(height: 16),
             
-            // 3. TOMBOL LAPORAN (Placeholder - Optional)
-            _buildWideCard(
-              context, 
-              title: "Laporan Pemesanan", 
-              subtitle: "Cek pendapatan dan booking masuk",
-              icon: Icons.bar_chart,
-              color: Colors.purple,
-              onTap: () {
-                 ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Fitur Laporan Segera Hadir!")),
-                  );
-              }
+            // 3. TOMBOL VALIDASI BOOKING
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              child: Material(
+                color: const Color(0xFF00B47A),
+                borderRadius: BorderRadius.circular(12),
+                child: InkWell(
+                  onTap: () {
+                    Navigator.pushNamed(context, Routes.validation);
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.verified_user,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Validasi Booking",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                "Setujui atau tolak booking pelanggan",
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.8),
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(
+                          Icons.arrow_forward_ios,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -192,47 +242,47 @@ class VendorHomeScreen extends StatelessWidget {
   }
 
   // Widget Helper: Kartu Menu Lebar (Untuk Laporan)
-  Widget _buildWideCard(BuildContext context,
-      {required String title,
-      required String subtitle,
-      required IconData icon,
-      required Color color,
-      required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 28),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  Text(subtitle, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-                ],
-              ),
-            ),
-            const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-          ],
-        ),
-      ),
-    );
-  }
+  // Widget _buildWideCard(BuildContext context,
+  //     {required String title,
+  //     required String subtitle,
+  //     required IconData icon,
+  //     required Color color,
+  //     required VoidCallback onTap}) {
+  //   return GestureDetector(
+  //     onTap: onTap,
+  //     child: Container(
+  //       padding: const EdgeInsets.all(20),
+  //       decoration: BoxDecoration(
+  //         color: Colors.white,
+  //         borderRadius: BorderRadius.circular(16),
+  //         boxShadow: [
+  //           BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))
+  //         ],
+  //       ),
+  //       child: Row(
+  //         children: [
+  //           Container(
+  //             padding: const EdgeInsets.all(12),
+  //             decoration: BoxDecoration(
+  //               color: color.withOpacity(0.1),
+  //               shape: BoxShape.circle,
+  //             ),
+  //             child: Icon(icon, color: color, size: 28),
+  //           ),
+  //           const SizedBox(width: 16),
+  //           Expanded(
+  //             child: Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+  //                 Text(subtitle, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+  //               ],
+  //             ),
+  //           ),
+  //           const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 }

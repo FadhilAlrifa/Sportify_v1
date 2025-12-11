@@ -522,8 +522,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 _filterChip('Pending', 'pending', Icons.access_time),
                 const SizedBox(width: 8),
                 _filterChip('Selesai', 'completed', Icons.check_circle),
-                const SizedBox(width: 8),
-                _filterChip('Dibatalkan', 'cancelled', Icons.cancel),
               ],
             ),
           ),

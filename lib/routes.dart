@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sportify/screens/vendor/validation_screen.dart';
 
 // --- IMPORTS SCREEN ---
 import 'screens/auth/login_screen.dart';
@@ -18,6 +19,7 @@ class Routes {
   static const String booking = '/booking';
   static const String addVenue = '/addVenue'; // <-- GANTI DENGAN CONST
   static const String vendorVenueList = '/vendorVenueList'; // Tambahkan ini jika belum ada
+  static const String validation = '/validation';
 
   // Generator Rute
   static Route<dynamic> generate(RouteSettings settings) {
@@ -63,6 +65,10 @@ class Routes {
         return MaterialPageRoute(
           builder: (_) => const VendorVenueListScreen(),
         );
+
+      // 8. VALIDATION SCREEN
+      case validation: 
+        return MaterialPageRoute(builder: (_) => const ValidationScreen());
 
       // 8. DEFAULT (Jika rute tidak ditemukan)
       default:
