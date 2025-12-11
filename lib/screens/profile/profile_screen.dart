@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
 // PENTING: Gunakan 'hide AuthProvider' agar tidak bentrok dengan Provider buatanmu
-import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
+// import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:provider/provider.dart'; 
 
 // Import Provider buatanmu

@@ -17,8 +17,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
   bool _isLoading = true;
   List<OrderHistory> _orders = [];
 
-  final DateFormat _dateFormatter = DateFormat('d MMM yyyy');
-  final DateFormat _df = DateFormat.yMMMd();
+  // final DateFormat _dateFormatter = DateFormat('d MMM yyyy');
+  // final DateFormat _df = DateFormat.yMMMd();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 

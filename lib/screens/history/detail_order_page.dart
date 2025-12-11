@@ -12,7 +12,7 @@ class DetailOrderPage extends StatelessWidget {
   Future<void> downloadPdf() async {
     final pdf = pw.Document();
     final df = DateFormat.yMMMd();
-    final timeFormatter = DateFormat('HH:mm');
+    // final timeFormatter = DateFormat('HH:mm');
 
     // Formatting Harga untuk PDF
     final priceFormatter =
