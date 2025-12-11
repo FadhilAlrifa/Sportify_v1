@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:sportify/screens/payment/payment_bottom_sheet.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:sportify/screens/payment/payment_bottom_sheet.dart';
 
 class BookingScreen extends StatefulWidget {
   final dynamic courtId;
@@ -13,15 +13,17 @@ class BookingScreen extends StatefulWidget {
 }
 
 class _BookingScreenState extends State<BookingScreen> {
+  // State Variables
   DateTime? _selectedDate;
   String? _selectedTime;
   int _selectedDuration = 1;
-  List<String> _availableTimes = [];
-  List<String> _bookedTimes = [];
+  
+  List<String> _availableTimes = []; // Jam operasional vendor (ex: 08:00, 09:00)
+  List<String> _bookedTimes = [];    // Jam yang sudah dibooking orang lain
+  
   bool _isLoading = true;
-  double basePrice = 100000.0; // Harga dasar per jam
   String _courtName = "";
-  double _courtPrice = 100000.0;
+  double _courtPrice = 0.0; // Harga dari database
 
   @override
   void initState() {
@@ -29,7 +31,7 @@ class _BookingScreenState extends State<BookingScreen> {
     _fetchCourtData();
   }
 
-  // Fungsi untuk mengambil data jam tersedia dari Firebase
+  // --- 1. AMBIL DATA DARI FIREBASE ---
   Future<void> _fetchCourtData() async {
     try {
       final doc = await FirebaseFirestore.instance
@@ -37,46 +39,84 @@ class _BookingScreenState extends State<BookingScreen> {
           .doc(widget.courtId.toString())
           .get();
 
-      if (doc.exists) {
+      if (doc.exists && mounted) {
         final data = doc.data() as Map<String, dynamic>;
 
-        // 1. Ambil nama lapangan
-        _courtName = data['name'] ?? "Lapangan";
+        setState(() {
+          // Ambil Nama
+          _courtName = data['name'] ?? "Lapangan";
+          
+          // Ambil Harga (Handle int/double)
+          _courtPrice = (data['price'] ?? 0).toDouble();
 
-        // Ambil semua jam yang tersedia
-        final List<dynamic> times = data['available_times'] ?? [];
-        _availableTimes = times.map((time) => time.toString()).toList();
+          // Ambil Jam Operasional yang diinput Vendor
+          // Pastikan field di Firebase bernama 'availableTimes' (sesuai AddVenueScreen)
+          _availableTimes = List<String>.from(data['availableTimes'] ?? []);
+          
+          // Urutkan jam dari pagi ke malam
+          _availableTimes.sort(); 
+        });
 
-        // Ambil jam yang sudah dibooking untuk tanggal yang dipilih
+        // Cek slot yang sudah terisi jika tanggal sudah dipilih
         if (_selectedDate != null) {
-          _updateBookedTimes(data);
+          _updateBookedTimes();
         }
-
-        print("Court data loaded: $_courtName, Price: $_courtPrice"); // DEBUG
       }
     } catch (e) {
-      print("Error fetching availability: $e");
+      print("Error fetching court data: $e");
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
-  // Fungsi untuk update jam yang sudah dibooking
-  void _updateBookedTimes(Map<String, dynamic> data) {
-    _bookedTimes.clear();
+  // --- 2. CEK SLOT TERISI (LOGIKA BOOKING) ---
+  // Fungsi ini mengecek koleksi 'bookings' untuk melihat apakah ada yang bentrok
+  Future<void> _updateBookedTimes() async {
+    if (_selectedDate == null) return;
 
-    final String formattedDate =
-        DateFormat('yyyy-MM-dd').format(_selectedDate!);
-    final List<dynamic> bookedSlots = data['booked_slots'] ?? [];
+    setState(() => _bookedTimes.clear());
 
-    for (var slot in bookedSlots) {
-      if (slot['date'] == formattedDate) {
-        final List<dynamic> times = slot['times'] ?? [];
-        _bookedTimes.addAll(times.map((time) => time.toString()));
-        break;
+    final String formattedDate = DateFormat('yyyy-MM-dd').format(_selectedDate!);
+
+    try {
+      // Query ke collection 'bookings' (Anda harus menyimpan data booking di sini saat payment sukses)
+      final snapshot = await FirebaseFirestore.instance
+          .collection('bookings')
+          .where('courtId', isEqualTo: widget.courtId)
+          .where('date', isEqualTo: formattedDate)
+          // Filter status agar booking yang batal tidak memblokir slot
+          // .where('status', whereIn: ['paid', 'pending']) 
+          .get();
+
+      List<String> tempBooked = [];
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        // Misal data booking menyimpan: time: "10:00", duration: 2
+        String startTime = data['time'];
+        int duration = data['duration'] ?? 1;
+
+        // Blokir jam sesuai durasi
+        // Contoh: Mulai 10:00, Durasi 2 jam -> Blokir 10:00 dan 11:00
+        int startIndex = _availableTimes.indexOf(startTime);
+        if (startIndex != -1) {
+          for (int i = 0; i < duration; i++) {
+            if (startIndex + i < _availableTimes.length) {
+              tempBooked.add(_availableTimes[startIndex + i]);
+            }
+          }
+        }
       }
+
+      if (mounted) {
+        setState(() {
+          _bookedTimes = tempBooked;
+        });
+      }
+    } catch (e) {
+      print("Error checking bookings: $e");
     }
   }
 
@@ -85,7 +125,7 @@ class _BookingScreenState extends State<BookingScreen> {
       context: context,
       initialDate: _selectedDate ?? DateTime.now(),
       firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 90)),
+      lastDate: DateTime.now().add(const Duration(days: 30)), // Max booking 30 hari ke depan
       builder: (context, child) {
         return Theme(
           data: ThemeData.light().copyWith(
@@ -103,48 +143,51 @@ class _BookingScreenState extends State<BookingScreen> {
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
-        _selectedTime = null;
-        _bookedTimes.clear();
+        _selectedTime = null; // Reset jam saat ganti tanggal
       });
-
-      // Refresh data booking untuk tanggal yang dipilih
-      await _fetchCourtData();
+      
+      // Cek ketersediaan slot untuk tanggal baru
+      _updateBookedTimes();
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
+    // Hitung Total Biaya
     final totalCost = _courtPrice * _selectedDuration;
 
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
         title: Text(
-          "Booking ${_courtName.isNotEmpty ? _courtName : 'Lapangan'}",
-          style:
-              const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          "Booking $_courtName",
+          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         backgroundColor: const Color(0xFF00B47A),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSectionTitle("📅 Pilih Tanggal"),
-            _buildDateSelector(context),
-            const SizedBox(height: 25),
-            _buildSectionTitle("⏱️ Durasi (Jam)"),
-            _buildDurationSelector(),
-            const SizedBox(height: 25),
-            _buildSectionTitle("⏰ Pilih Waktu Mulai"),
-            _buildTimeGrid(),
-            const SizedBox(height: 50),
-          ],
-        ),
-      ),
+      body: _isLoading 
+          ? const Center(child: CircularProgressIndicator()) 
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionTitle("📅 Pilih Tanggal"),
+                  _buildDateSelector(context),
+                  const SizedBox(height: 25),
+                  
+                  _buildSectionTitle("⏱️ Durasi (Jam)"),
+                  _buildDurationSelector(),
+                  const SizedBox(height: 25),
+                  
+                  _buildSectionTitle("⏰ Pilih Waktu Mulai"),
+                  _buildTimeGrid(),
+                  
+                  const SizedBox(height: 50),
+                ],
+              ),
+            ),
       bottomNavigationBar: _buildBottomBar(totalCost),
     );
   }
@@ -183,14 +226,11 @@ class _BookingScreenState extends State<BookingScreen> {
           Text(
             _selectedDate == null
                 ? "Pilih Tanggal Booking"
-                : DateFormat('EEEE, dd MMMM yyyy', 'id_ID')
-                    .format(_selectedDate!),
+                : DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(_selectedDate!),
             style: TextStyle(
               fontSize: 16,
-              color:
-                  _selectedDate == null ? Colors.grey.shade600 : Colors.black87,
-              fontWeight:
-                  _selectedDate == null ? FontWeight.normal : FontWeight.w600,
+              color: _selectedDate == null ? Colors.grey.shade600 : Colors.black87,
+              fontWeight: _selectedDate == null ? FontWeight.normal : FontWeight.w600,
             ),
           ),
           IconButton(
@@ -207,9 +247,7 @@ class _BookingScreenState extends State<BookingScreen> {
       children: [
         _buildDurationButton("-", () {
           if (_selectedDuration > 1) {
-            setState(() {
-              _selectedDuration--;
-            });
+            setState(() => _selectedDuration--);
           }
         }),
         Container(
@@ -228,9 +266,7 @@ class _BookingScreenState extends State<BookingScreen> {
           ),
         ),
         _buildDurationButton("+", () {
-          setState(() {
-            _selectedDuration++;
-          });
+          setState(() => _selectedDuration++);
         }),
       ],
     );
@@ -247,16 +283,33 @@ class _BookingScreenState extends State<BookingScreen> {
         ),
         child: Text(
           text,
-          style: const TextStyle(
-              fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
     );
   }
 
   Widget _buildTimeGrid() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+    // Jika belum pilih tanggal, minta pilih tanggal dulu
+    if (_selectedDate == null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.orange.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.orange.shade200)
+        ),
+        child: const Text(
+          "Silakan pilih tanggal terlebih dahulu untuk melihat ketersediaan jam.",
+          style: TextStyle(color: Colors.orange),
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
+    if (_availableTimes.isEmpty) {
+      return const Center(child: Text("Tidak ada jam tersedia untuk lapangan ini."));
     }
 
     return GridView.builder(
@@ -265,18 +318,20 @@ class _BookingScreenState extends State<BookingScreen> {
       itemCount: _availableTimes.length,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 4,
-        childAspectRatio: 2.5,
+        childAspectRatio: 2.2,
         mainAxisSpacing: 10,
         crossAxisSpacing: 10,
       ),
       itemBuilder: (context, index) {
         final time = _availableTimes[index];
+        
+        // Logika Status Slot
         final isBooked = _bookedTimes.contains(time);
-        final isSelected = time == _selectedTime && !isBooked;
+        final isSelected = time == _selectedTime;
 
         return InkWell(
           onTap: isBooked
-              ? null
+              ? null // Tidak bisa diklik kalau sudah dibooking
               : () {
                   setState(() {
                     _selectedTime = time;
@@ -286,14 +341,14 @@ class _BookingScreenState extends State<BookingScreen> {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: isBooked
-                  ? Colors.red.shade100
+                  ? Colors.red.shade100 // Warna Merah (Full)
                   : isSelected
-                      ? const Color(0xFF00B47A)
-                      : Colors.white,
+                      ? const Color(0xFF00B47A) // Warna Hijau (Dipilih)
+                      : Colors.white, // Warna Putih (Available)
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: isBooked
-                    ? Colors.red.shade400
+                    ? Colors.red.shade300
                     : isSelected
                         ? const Color(0xFF00B47A)
                         : Colors.grey.shade300,
@@ -308,6 +363,7 @@ class _BookingScreenState extends State<BookingScreen> {
                         ? Colors.white
                         : Colors.black87,
                 fontWeight: FontWeight.w600,
+                fontSize: 13,
               ),
             ),
           ),
@@ -317,6 +373,9 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Widget _buildBottomBar(double totalCost) {
+    // Tombol aktif hanya jika Tanggal & Jam sudah dipilih
+    bool isButtonEnabled = _selectedDate != null && _selectedTime != null;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
       decoration: BoxDecoration(
@@ -352,10 +411,9 @@ class _BookingScreenState extends State<BookingScreen> {
             ],
           ),
           ElevatedButton(
-            onPressed: (_selectedDate != null && _selectedTime != null)
+            onPressed: isButtonEnabled
                 ? () {
-                    final totalCost = basePrice * _selectedDuration;
-
+                    // Tampilkan Bottom Sheet Pembayaran
                     showModalBottomSheet(
                       context: context,
                       isScrollControlled: true,
@@ -368,14 +426,15 @@ class _BookingScreenState extends State<BookingScreen> {
                           duration: _selectedDuration,
                           totalCost: totalCost,
                           courtName: _courtName,
-                          basePrice: basePrice,
+                          basePrice: _courtPrice,
                         );
                       },
                     );
                   }
-                : null,
+                : null, // Disable jika belum lengkap
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF00B47A),
+              disabledBackgroundColor: Colors.grey.shade300,
               padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -390,7 +449,6 @@ class _BookingScreenState extends State<BookingScreen> {
               ),
             ),
           ),
-
         ],
       ),
     );

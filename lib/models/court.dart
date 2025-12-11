@@ -8,6 +8,7 @@ class CourtModel {
   final int price;
   final String description; // Deskripsi lapangan
   final List<String> facilities; // Daftar fasilitas (WiFi, Parkir, dll)
+  final List<String> availableTimes;
 
   CourtModel({
     required this.id,
@@ -19,6 +20,7 @@ class CourtModel {
     required this.price,
     required this.description,
     required this.facilities,
+    required this.availableTimes,
   });
 
   // Factory constructor untuk mengubah data JSON (Map) dari Firebase menjadi Object Dart
@@ -39,6 +41,7 @@ class CourtModel {
       // Konversi aman untuk List
       // Mengambil array 'facilities', jika null jadikan list kosong []
       facilities: List<String>.from(data['facilities'] ?? []),
+      availableTimes: List<String>.from(data['availableTimes'] ?? []),
     );
   }
 }

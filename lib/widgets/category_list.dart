@@ -27,6 +27,7 @@ class CategoryList extends StatelessWidget {
           _kategoriItem("Futsal", Ionicons.football_outline, Colors.blue),
           _kategoriItem("Badminton", Ionicons.tennisball_outline, Colors.pink),
           _kategoriItem("Basket", Ionicons.basketball_outline, Colors.orange),
+          _kategoriItem("Padel", Ionicons.tennisball, const Color.fromARGB(255, 255, 82, 255)),
           _kategoriItem("Voli", Ionicons.body_outline, Colors.green),
           _kategoriItem("Tenis", Ionicons.tennisball, Colors.redAccent),
           _kategoriItem("Mini Soccer", Ionicons.earth, Colors.teal), // Sesuaikan ikon
