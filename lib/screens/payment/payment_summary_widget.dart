@@ -14,7 +14,7 @@ class PaymentSummaryWidget extends StatelessWidget {
     required this.date,
     required this.time,
     required this.duration,
-    required this.totalCost,
+    required this.totalCost, required String courtName, required double basePrice,
   });
 
   Widget _row(String label, String value, {bool bold = false}) {

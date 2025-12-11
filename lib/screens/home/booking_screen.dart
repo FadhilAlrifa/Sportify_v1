@@ -20,15 +20,17 @@ class _BookingScreenState extends State<BookingScreen> {
   List<String> _bookedTimes = [];
   bool _isLoading = true;
   double basePrice = 100000.0; // Harga dasar per jam
+  String _courtName = "";
+  double _courtPrice = 100000.0;
 
   @override
   void initState() {
     super.initState();
-    _fetchCourtAvailability();
+    _fetchCourtData();
   }
 
   // Fungsi untuk mengambil data jam tersedia dari Firebase
-  Future<void> _fetchCourtAvailability() async {
+  Future<void> _fetchCourtData() async {
     try {
       final doc = await FirebaseFirestore.instance
           .collection('venues')
@@ -38,6 +40,9 @@ class _BookingScreenState extends State<BookingScreen> {
       if (doc.exists) {
         final data = doc.data() as Map<String, dynamic>;
 
+        // 1. Ambil nama lapangan
+        _courtName = data['name'] ?? "Lapangan";
+
         // Ambil semua jam yang tersedia
         final List<dynamic> times = data['available_times'] ?? [];
         _availableTimes = times.map((time) => time.toString()).toList();
@@ -46,6 +51,8 @@ class _BookingScreenState extends State<BookingScreen> {
         if (_selectedDate != null) {
           _updateBookedTimes(data);
         }
+
+        print("Court data loaded: $_courtName, Price: $_courtPrice"); // DEBUG
       }
     } catch (e) {
       print("Error fetching availability: $e");
@@ -101,20 +108,20 @@ class _BookingScreenState extends State<BookingScreen> {
       });
 
       // Refresh data booking untuk tanggal yang dipilih
-      await _fetchCourtAvailability();
+      await _fetchCourtData();
     }
   }
 
 
   @override
   Widget build(BuildContext context) {
-    final totalCost = basePrice * _selectedDuration;
+    final totalCost = _courtPrice * _selectedDuration;
 
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
         title: Text(
-          "Booking Lapangan:",
+          "Booking ${_courtName.isNotEmpty ? _courtName : 'Lapangan'}",
           style:
               const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
@@ -360,6 +367,8 @@ class _BookingScreenState extends State<BookingScreen> {
                           selectedTime: _selectedTime!,
                           duration: _selectedDuration,
                           totalCost: totalCost,
+                          courtName: _courtName,
+                          basePrice: basePrice,
                         );
                       },
                     );

@@ -1,66 +1,130 @@
+import 'dart:ui';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // <--- INI PERBAIKANNYA
 
 class OrderHistory {
   final String id;
+  final String courtId;
   final String courtName;
-  final String imageUrl;
   final String date;
   final String time;
-  final int price;
+  final int duration;
+  final double basePrice;
+  final double totalCost;
+  final String paymentMethod;
+  final String paymentProofUrl;
   final String status;
+  final String? userId;
+  final String? userEmail;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
-  const OrderHistory({
+  OrderHistory({
     required this.id,
+    required this.courtId,
     required this.courtName,
-    required this.imageUrl,
     required this.date,
     required this.time,
-    required this.price,
+    required this.duration,
+    required this.basePrice,
+    required this.totalCost,
+    required this.paymentMethod,
+    required this.paymentProofUrl,
     required this.status,
+    this.userId,
+    this.userEmail,
+    this.createdAt,
+    this.updatedAt,
   });
-}
 
-// Dummy data (Ditingkatkan untuk menguji filter waktu)
-List<OrderHistory> dummyHistory = [
-  // HARI INI
-  OrderHistory(
-    id: "1",
-    courtName: "Arena Futsal A",
-    imageUrl: "https://i.imgur.com/GYQ8Q89.jpg",
-    date: DateFormat('d MMM yyyy').format(DateTime.now()), // Hari ini
-    time: "14:00 - 15:00",
-    price: 70000,
-    status: "Selesai", 
-  ),
-  // MINGGU INI (misalnya 3 hari yang lalu)
-  OrderHistory(
-    id: "2",
-    courtName: "Lapangan Voli B",
-    imageUrl: "https://i.imgur.com/yYqv0eG.jpg",
-    date: DateFormat('d MMM yyyy').format(DateTime.now().subtract(const Duration(days: 3))),
-    time: "16:00 - 17:00",
-    price: 60000,
-    status: "Pending",
-  ),
-  // BULAN INI (misalnya 15 hari yang lalu)
-  OrderHistory(
-    id: "3",
-    courtName: "Gedung Badminton C",
-    imageUrl: "https://i.imgur.com/yYqv0eG.jpg",
-    date: DateFormat('d MMM yyyy').format(DateTime.now().subtract(const Duration(days: 15))),
-    time: "09:00 - 10:00",
-    price: 90000,
-    status: "Selesai",
-  ),
-  // BULAN LALU (tidak termasuk dalam filter 'month')
-  OrderHistory(
-    id: "4",
-    courtName: "Kolam Renang D",
-    imageUrl: "https://i.imgur.com/GYQ8Q89.jpg",
-    date: DateFormat('d MMM yyyy').format(DateTime.now().subtract(const Duration(days: 40))),
-    time: "11:00 - 12:00",
-    price: 120000,
-    status: "Pending",
-  ),
-];
+  // Factory method untuk membuat OrderHistory dari Firestore DocumentSnapshot
+  factory OrderHistory.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+
+    return OrderHistory(
+      id: doc.id,
+      courtId: data['court_id']?.toString() ?? '',
+      courtName: data['court_name']?.toString() ?? 'Lapangan',
+      date: data['date']?.toString() ?? '',
+      time: data['time']?.toString() ?? '',
+      duration: (data['duration'] as int?) ?? 1,
+      basePrice: (data['base_price'] as num?)?.toDouble() ?? 0.0,
+      totalCost: (data['total_cost'] as num?)?.toDouble() ?? 0.0,
+      paymentMethod: data['payment_method']?.toString() ?? '',
+      paymentProofUrl: data['payment_proof_url']?.toString() ?? '',
+      status: data['status']?.toString() ?? 'pending',
+      userId: data['user_id']?.toString(),
+      userEmail: data['user_email']?.toString(),
+      createdAt: (data['created_at'] as Timestamp?)?.toDate(),
+      updatedAt: (data['updated_at'] as Timestamp?)?.toDate(),
+    );
+  }
+
+  // Helper untuk mendapatkan format tanggal yang lebih baik
+  String get formattedDate {
+    try {
+      // Coba parse format yyyy-MM-dd
+      final parts = date.split('-');
+      if (parts.length == 3) {
+        final year = parts[0];
+        final month = int.parse(parts[1]);
+        final day = int.parse(parts[2]);
+
+        final monthNames = [
+          'Jan',
+          'Feb',
+          'Mar',
+          'Apr',
+          'May',
+          'Jun',
+          'Jul',
+          'Aug',
+          'Sep',
+          'Oct',
+          'Nov',
+          'Dec'
+        ];
+
+        return '$day ${monthNames[month - 1]} $year';
+      }
+      return date;
+    } catch (e) {
+      return date;
+    }
+  }
+
+  // Helper untuk status dengan warna
+  Color get statusColor {
+    final statusLower = status.toLowerCase();
+    if (statusLower.contains('selesai') ||
+        statusLower.contains('completed') ||
+        statusLower.contains('confirmed')) {
+      return Colors.green;
+    } else if (statusLower.contains('pending') ||
+        statusLower.contains('menunggu')) {
+      return Colors.orange;
+    } else if (statusLower.contains('cancel') ||
+        statusLower.contains('dibatalkan')) {
+      return Colors.red;
+    } else if (statusLower.contains('belum dibayar')) {
+      return Colors.red.shade700;
+    }
+    return Colors.grey;
+  }
+
+  // Helper untuk icon status
+  IconData get statusIcon {
+    final statusLower = status.toLowerCase();
+    if (statusLower.contains('selesai') || statusLower.contains('completed')) {
+      return Icons.check_circle;
+    } else if (statusLower.contains('pending')) {
+      return Icons.access_time;
+    } else if (statusLower.contains('cancel')) {
+      return Icons.cancel;
+    } else if (statusLower.contains('belum dibayar')) {
+      return Icons.payment;
+    }
+    return Icons.info;
+  }
+}

@@ -9,6 +9,8 @@ class PaymentBottomSheet extends StatefulWidget {
   final String selectedTime;
   final int duration;
   final double totalCost;
+  final String courtName;
+  final double basePrice;
 
   const PaymentBottomSheet({
     super.key,
@@ -17,6 +19,8 @@ class PaymentBottomSheet extends StatefulWidget {
     required this.selectedTime,
     required this.duration,
     required this.totalCost,
+    required this.courtName,
+    required this.basePrice,
   });
 
   @override
@@ -38,6 +42,8 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
         children: [
           PaymentSummaryWidget(
             courtId: widget.courtId,
+            courtName: widget.courtName,
+            basePrice: widget.basePrice,
             date: widget.selectedDate,
             time: widget.selectedTime,
             duration: widget.duration,
@@ -125,7 +131,8 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
                     date: widget.selectedDate,
                     time: widget.selectedTime,
                     duration: widget.duration,
-                    totalCost: widget.totalCost, courtName: '', basePrice: 100000,
+                    totalCost: widget.totalCost, basePrice: 100000,
+                    courtName: widget.courtName,
                   ),
                 ),
               );
